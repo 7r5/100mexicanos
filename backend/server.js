@@ -176,14 +176,6 @@ function chooseCard() {
     return state.currentCard;
 }
 
-function revealRemainingForDisplay(card) {
-    card.revealed = card.revealed.map((answer, index) => {
-        if (answer) return answer;
-        const points = Number(card.points[index]);
-        return { points: Number.isFinite(points) ? points : 0, displayOnly: true };
-    });
-}
-
 function requireHost(socket, next) {
     if (socket.handshake.auth?.token !== hostToken) return next(new Error('Host token invalido'));
     socket.data.isHost = true;
@@ -262,11 +254,16 @@ hostNamespace.on('connection', (socket) => {
             if (state.currentCard.revealed[answerIndex]) throw new Error('Respuesta ya revelada');
             const points = Number(state.currentCard.points[answerIndex]);
             if (!Number.isFinite(points)) throw new Error('Puntuacion invalida');
-            state.currentCard.revealed[answerIndex] = { points };
-            state.currentCard.roundPoints = Number(state.currentCard.roundPoints || 0) + points;
+            const alreadyAwarded = Boolean(state.currentCard.awardedTo);
+            if (alreadyAwarded) {
+                state.currentCard.revealed[answerIndex] = { points, displayOnly: true };
+            } else {
+                state.currentCard.revealed[answerIndex] = { points };
+                state.currentCard.roundPoints = Number(state.currentCard.roundPoints || 0) + points;
+            }
             await saveState();
             broadcastState();
-            reply(ack, { ok: true });
+            reply(ack, { ok: true, scored: !alreadyAwarded });
         } catch (error) { reply(ack, { ok: false, error: error.message }); }
     });
     socket.on('game:end-game', async (_payload, ack) => {
@@ -286,10 +283,7 @@ hostNamespace.on('connection', (socket) => {
             const roundPoints = Number(state.currentCard.roundPoints || 0);
             state.scores[team] = Number(state.scores[team]) + roundPoints;
             state.currentCard.awardedTo = team;
-            revealRemainingForDisplay(state.currentCard);
-            state.currentCard.revealed = state.currentCard.revealed.map((answer) =>
-                answer.displayOnly ? answer : { ...answer, team }
-            );
+            state.currentCard.revealed = state.currentCard.revealed.map((answer) => (answer ? { ...answer, team } : answer));
             await saveState();
             broadcastState();
             reply(ack, { ok: true, points: roundPoints });
@@ -316,10 +310,7 @@ hostNamespace.on('connection', (socket) => {
             state.scores[toTeam] = Number(state.scores[toTeam]) + roundPoints;
             state.currentCard.awardedTo = toTeam;
             state.currentCard.stolenBy = toTeam;
-            revealRemainingForDisplay(state.currentCard);
-            state.currentCard.revealed = state.currentCard.revealed.map((answer) =>
-                answer.displayOnly ? answer : { ...answer, team: toTeam }
-            );
+            state.currentCard.revealed = state.currentCard.revealed.map((answer) => (answer ? { ...answer, team: toTeam } : answer));
             await saveState();
             broadcastState();
             reply(ack, { ok: true, points: roundPoints });
@@ -353,6 +344,12 @@ hostNamespace.on('connection', (socket) => {
             const key = String(soundKey || '').trim();
             if (!key) throw new Error('Sonido invalido');
             io.emit('sound:play', { soundKey: key });
+            reply(ack, { ok: true });
+        } catch (error) { reply(ack, { ok: false, error: error.message }); }
+    });
+    socket.on('game:stop-sound', async (_payload, ack) => {
+        try {
+            io.emit('sound:stop');
             reply(ack, { ok: true });
         } catch (error) { reply(ack, { ok: false, error: error.message }); }
     });

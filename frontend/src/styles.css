@@ -50,9 +50,11 @@ h1, h2, p { margin: 0; }
 .victory-button { background: #f3d83b; color: #1c1437; font-weight: 900; }
 .team-name-fields { display: grid; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #3d3857; }
 .sound-panel { grid-column: span 12; }
-.sound-list { display: grid; gap: 8px; max-height: 320px; overflow: auto; }
-.sound-choice { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 11px 14px; text-align: left; }
-.sound-choice span { font: 800 16px/1 'Barlow Condensed'; letter-spacing: .05em; text-transform: uppercase; }
+.sound-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; max-height: 320px; overflow: auto; }
+.sound-choice { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; width: 100%; padding: 16px 10px; text-align: center; }
+.sound-choice.playing { background: #f3d83b; color: #1c1437; box-shadow: 0 0 0 2px #ffdc32, 0 0 14px rgba(243, 216, 59, .6); }
+.sound-choice.playing small { color: #1c1437; }
+.sound-choice span { font: 800 15px/1.1 'Barlow Condensed'; letter-spacing: .05em; text-transform: uppercase; }
 .sound-choice small { color: #f3d83b; font: 700 12px/1 'Barlow Condensed'; letter-spacing: .12em; text-transform: uppercase; }
 .empty-state { color: #b6b0c6; font: 700 14px/1 'Barlow Condensed'; }
 .strikes-panel .strikes { justify-content: space-between; margin-top: 9px; }.steal-button { background: #ffca3a; color: #1c1437; font-weight: 900; }

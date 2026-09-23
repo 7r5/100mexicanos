@@ -38,10 +38,27 @@ async function getSoundLibrary() {
   return entries.sort((left, right) => left.label.localeCompare(right.label));
 }
 
-function playAudioSource(src) {
+let activeAudio = null;
+
+function stopCurrentAudio() {
+  if (activeAudio) {
+    activeAudio.pause();
+    activeAudio.currentTime = 0;
+    activeAudio = null;
+  }
+}
+
+function playAudioSource(src, onEnded) {
+  stopCurrentAudio();
   const audio = new Audio(src);
   audio.volume = 0.9;
+  audio.addEventListener("ended", () => {
+    if (activeAudio === audio) activeAudio = null;
+    if (onEnded) onEnded();
+  });
+  activeAudio = audio;
   audio.play().catch(() => {});
+  return audio;
 }
 
 function playGameSound(type) {
@@ -260,17 +277,21 @@ function Board() {
       if (!sound) return;
       playAudioSource(sound.src);
     };
+    const onStopSound = () => stopCurrentAudio();
     window.gameSocket.on("sound:play", onPlaySound);
+    window.gameSocket.on("sound:stop", onStopSound);
     return () => {
       window.gameSocket.off("sound:play", onPlaySound);
+      window.gameSocket.off("sound:stop", onStopSound);
     };
   }, [soundLibrary]);
   useEffect(() => {
-    const previousRevealed = (previousCard.current?.revealed || []).filter(
-      Boolean,
-    ).length;
-    const currentRevealed = (card?.revealed || []).filter(Boolean).length;
-    if (previousCard.current && currentRevealed > previousRevealed) {
+    const previousRevealed = previousCard.current?.revealed || [];
+    const currentRevealed = card?.revealed || [];
+    const newlyScored = currentRevealed.some(
+      (reveal, index) => reveal && !reveal.displayOnly && !previousRevealed[index],
+    );
+    if (previousCard.current && newlyScored) {
       playGameSound("correct");
     } else if (
       (state.strikes?.red || 0) > previousStrikes.current.red ||
@@ -370,6 +391,7 @@ function Host() {
   const [soundLibrary, setSoundLibrary] = useState([]);
   const [message, setMessage] = useState("");
   const [syncing, setSyncing] = useState(false);
+  const [playingSoundKey, setPlayingSoundKey] = useState(null);
   useEffect(
     () => setScores(state.scores),
     [state.scores.red, state.scores.white],
@@ -404,7 +426,8 @@ function Host() {
   async function action(event, payload) {
     const result = await send(event, payload);
     if (result?.ok && event === "game:reveal-question") playGameSound("start");
-    if (result?.ok && event === "game:reveal") playGameSound("correct");
+    if (result?.ok && event === "game:reveal" && result.scored)
+      playGameSound("correct");
     if (result?.ok && event === "game:strike") playGameSound("incorrect");
     if (result?.ok && event === "game:end-game") playGameSound("victory");
     setMessage(
@@ -415,9 +438,20 @@ function Host() {
     window.setTimeout(() => setMessage(""), 2200);
   }
   async function playSoundToViewer(sound) {
+    if (playingSoundKey === sound.key) {
+      stopCurrentAudio();
+      setPlayingSoundKey(null);
+      await send("game:stop-sound");
+      return;
+    }
     const result = await send("game:play-sound", { soundKey: sound.key });
     if (result?.ok) {
-      playAudioSource(sound.src);
+      playAudioSource(sound.src, () =>
+        setPlayingSoundKey((current) =>
+          current === sound.key ? null : current,
+        ),
+      );
+      setPlayingSoundKey(sound.key);
       setMessage(`Reproduciendo: ${sound.label}`);
       window.setTimeout(() => setMessage(""), 1800);
       return;
@@ -481,20 +515,23 @@ function Host() {
             <span>Sonidos</span>
             <strong>Vista jugador</strong>
           </div>
-          <div className="sound-list">
+          <div className="sound-grid">
             {soundLibrary.length === 0 && (
               <span className="empty-state">Cargando sonidos...</span>
             )}
-            {soundLibrary.map((sound) => (
-              <button
-                key={sound.key}
-                className="secondary sound-choice"
-                onClick={() => playSoundToViewer(sound)}
-              >
-                <span>{sound.label}</span>
-                <small>play</small>
-              </button>
-            ))}
+            {soundLibrary.map((sound) => {
+              const isPlaying = playingSoundKey === sound.key;
+              return (
+                <button
+                  key={sound.key}
+                  className={`secondary sound-choice ${isPlaying ? "playing" : ""}`}
+                  onClick={() => playSoundToViewer(sound)}
+                >
+                  <span>{sound.label}</span>
+                  <small>{isPlaying ? "■ stop" : "▶ play"}</small>
+                </button>
+              );
+            })}
           </div>
         </div>
         <div className="control-panel strikes-panel">
