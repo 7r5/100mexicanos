@@ -31,11 +31,11 @@ button:disabled { cursor: not-allowed; opacity: .42; }
 .show-badge { margin: -75px auto 10px; width: 150px; padding: 4px 15px; border: 5px solid #ffca3a; border-radius: 50%; background: #172e6d; color: #ffdb2f; font: 900 42px/1 'Barlow Condensed'; text-shadow: 2px 2px #a43e20; }
 .eyebrow { margin: 0 0 5px; color: #ffda33; font: 800 14px/1 'Barlow Condensed'; letter-spacing: .16em; text-transform: uppercase; }
 h1, h2, p { margin: 0; }
-.question-header h1 { color: #fff; font: 800 clamp(25px, 4vw, 52px)/1.05 'Barlow Condensed'; text-transform: uppercase; }
+.question-header h1 { color: #fff; font: 800 clamp(34px, 6.4vw, 84px)/1.05 'Barlow Condensed'; text-transform: uppercase; }
 .board-scores { display: flex; justify-content: space-between; gap: 18px; margin: 24px 0 18px; }.team-score-group { display: flex; align-items: center; max-width: 47%; }.team-score { display: flex; align-items: center; justify-content: space-between; gap: 18px; min-width: 220px; max-width: 100%; padding: 8px 18px; border-radius: 5px; background: #18224c; border-top: 6px solid; font: 800 18px/1 'Barlow Condensed'; letter-spacing: .1em; }.team-score-info { display: flex; min-width: 0; flex-direction: column; align-items: center; }.team-score-info > span { max-width: 100%; color: #fff; font: 900 clamp(22px, 3vw, 34px)/.9 'Barlow Condensed'; letter-spacing: .04em; text-align: center; text-transform: uppercase; overflow-wrap: anywhere; }
 .team-score strong { color: #ffdb2f; font: 900 clamp(40px, 7vw, 74px)/.9 'Barlow Condensed'; letter-spacing: 0; }
 .team-score.red { border-color: #fb3d46; }.team-score.white { border-color: #f5f5ed; }
-.board-round-points { display: flex; justify-content: center; margin: -8px 0 16px; }.round-points { padding: 7px 16px; border: 2px solid #ffdc32; background: #22213c; color: #ffdc32; font: 900 24px/1 'Barlow Condensed'; letter-spacing: .08em; text-transform: uppercase; }
+.board-round-points { display: flex; justify-content: center; margin: -8px 0 16px; }.round-points { padding: 10px 28px; border: 3px solid #ffdc32; background: #22213c; color: #ffdc32; font: 900 clamp(28px, 4.2vw, 50px)/1 'Barlow Condensed'; letter-spacing: .08em; text-transform: uppercase; }
 .answer-board { display: grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(3, 1fr); grid-auto-flow: column; gap: 9px 16px; }
 .answer-row { display: grid; grid-template-columns: 52px 18px 1fr 80px; align-items: center; min-height: clamp(52px, 7vw, 78px); border: 2px solid #333747; background: #151823; color: #778095; }
 .answer-row.revealed { border-color: #ffdc32; color: #fff; background: linear-gradient(90deg, #202750, #17203d); animation: reveal-pan .45s ease-out both; }
