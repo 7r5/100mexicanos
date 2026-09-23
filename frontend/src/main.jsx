@@ -257,10 +257,26 @@ function RoundPoints({ points }) {
   return <strong className="round-points">Ronda: {points || 0}</strong>;
 }
 
+const SUNBURST_PALETTES = [
+  { bg: "#ff4376", c1: "#ffea3d", c2: "#ff4376", c3: "#6724cb" },
+  { bg: "#1f7fff", c1: "#ffe94d", c2: "#1f7fff", c3: "#0e2f7a" },
+  { bg: "#1fbf6b", c1: "#fff45e", c2: "#1fbf6b", c3: "#0a5c39" },
+  { bg: "#ff8a1f", c1: "#fff45e", c2: "#ff8a1f", c3: "#7a2b0a" },
+  { bg: "#8a2be2", c1: "#ffea3d", c2: "#8a2be2", c3: "#2a0a5c" },
+  { bg: "#ff2b6b", c1: "#3dffea", c2: "#ff2b6b", c3: "#1a0a5c" },
+];
+
+function pickRandomPalette() {
+  return SUNBURST_PALETTES[
+    Math.floor(Math.random() * SUNBURST_PALETTES.length)
+  ];
+}
+
 function Board() {
   const { state, connected, error } = useGameState(false);
   const [syncing, setSyncing] = useState(false);
   const [soundLibrary, setSoundLibrary] = useState([]);
+  const [palette] = useState(() => pickRandomPalette());
   const card = state.currentCard;
   const teamNames = state.teamNames || blankState.teamNames;
   const previousCard = useRef(null);
@@ -325,8 +341,15 @@ function Board() {
     previousStatus.current = state.status;
   }, [card?.questionVisible, state.status]);
   return (
-    <main className="board-page">
-      <div className="sunburst" />
+    <main className="board-page" style={{ "--board-bg": palette.bg }}>
+      <div
+        className="sunburst"
+        style={{
+          "--sunburst-c1": palette.c1,
+          "--sunburst-c2": palette.c2,
+          "--sunburst-c3": palette.c3,
+        }}
+      />
       <div className="board-status">
         <SyncButton syncing={syncing} onClick={syncScreen} />
         <ConnectionBanner connected={connected} error={error} />
@@ -384,11 +407,7 @@ function Board() {
             },
           )}
         </section>
-        <div className="board-footer">
-          <span className="connection">
-            {connected ? "EN VIVO" : "RECONECTANDO"}
-          </span>
-        </div>
+        <div className="board-footer"></div>
       </div>
       <ScreenNav current="board" />
     </main>

@@ -15,10 +15,10 @@ button:disabled { cursor: not-allowed; opacity: .42; }
 .connection-banner.online { border-color: #62ddae; background: rgba(25, 105, 82, .42); color: #a9f5d8; }
 .connection-banner.offline { border-color: #ff6572; background: rgba(112, 28, 48, .62); color: #ffd0d4; animation: connection-pulse 1.8s ease-in-out infinite; }
 .connection-dot { width: 10px; height: 10px; flex: 0 0 10px; border-radius: 50%; background: currentColor; box-shadow: 0 0 12px currentColor; }
-.board-page { min-height: 100vh; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: clamp(10px, 1.6vw, 28px); overflow: hidden; position: relative; background: #ff4376; }
+.board-page { min-height: 100vh; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: clamp(10px, 1.6vw, 28px); overflow: hidden; position: relative; background: var(--board-bg, #ff4376); }
 .board-status { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; gap: 12px; width: min(1900px, 97vw); margin-bottom: 14px; }
 .board-status .connection-banner { margin: 0; }
-.sunburst { position: absolute; inset: -50%; background: repeating-conic-gradient(from 4deg, rgba(255,255,255,.2) 0deg 6deg, transparent 6deg 17deg), radial-gradient(circle at center, #ffea3d 0 8%, #ff4376 32%, #6724cb 76%); animation: pulse 14s linear infinite; }
+.sunburst { position: absolute; inset: -50%; background: repeating-conic-gradient(from 4deg, rgba(255,255,255,.2) 0deg 6deg, transparent 6deg 17deg), radial-gradient(circle at center, var(--sunburst-c1, #ffea3d) 0 8%, var(--sunburst-c2, #ff4376) 32%, var(--sunburst-c3, #6724cb) 76%); animation: pulse 14s linear infinite; }
 .board-shell { width: min(1900px, 97vw); position: relative; background: #090a12; border: clamp(7px, 1vw, 14px) solid #ffca3a; outline: 5px solid #8e263b; box-shadow: 0 0 0 10px #ffed91, 0 20px 60px rgba(22,4,54,.45); padding: clamp(16px, 2.4vw, 40px); }
 .board-strike-overlay { position: absolute; z-index: 3; inset: 0; display: grid; place-items: center; pointer-events: none; overflow: hidden; }
 .board-strike-overlay span { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: clamp(10px, 2vw, 28px); color: #f51c2a; transform: rotate(-12deg); animation: giant-strike 8s cubic-bezier(.2, .8, .3, 1) both; }
