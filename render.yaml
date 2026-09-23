@@ -27,7 +27,6 @@ services:
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: dist
-    plan: free
     autoDeployTrigger: commit
     envVars:
       - key: VITE_API_HOST
