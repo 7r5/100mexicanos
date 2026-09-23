@@ -23,13 +23,25 @@ function useGameState(isHost) {
   const [error, setError] = useState("");
   useEffect(() => {
     const socket = isHost
-      ? io(`${apiUrl}/host`, { auth: { token: hostToken } })
-      : io(apiUrl);
+      ? io(`${apiUrl}/host`, {
+          auth: { token: hostToken },
+          transports: ["websocket", "polling"],
+          timeout: 15000,
+          reconnection: true,
+        })
+      : io(apiUrl, {
+          transports: ["websocket", "polling"],
+          timeout: 15000,
+          reconnection: true,
+        });
     socket.on("connect", () => {
       setConnected(true);
       setError("");
     });
-    socket.on("disconnect", () => setConnected(false));
+    socket.on("disconnect", (reason) => {
+      setConnected(false);
+      if (reason !== "io client disconnect") setError("Backend desconectado");
+    });
     socket.on("connect_error", (event) => setError(event.message));
     socket.on("state:update", setState);
     window.gameSocket = socket;
@@ -42,9 +54,13 @@ function useGameState(isHost) {
 }
 
 function send(event, payload = {}) {
-  return new Promise((resolve) =>
-    window.gameSocket?.emit(event, payload, resolve),
-  );
+  return new Promise((resolve) => {
+    if (!window.gameSocket?.connected) {
+      resolve({ ok: false, error: "El backend no esta conectado" });
+      return;
+    }
+    window.gameSocket.emit(event, payload, resolve);
+  });
 }
 
 function TeamScore({ name, value, color }) {
