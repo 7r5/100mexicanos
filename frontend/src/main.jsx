@@ -194,9 +194,11 @@ function Board() {
     <main className="board-page">
       <div className="sunburst" />
       <ScreenNav current="board" />
-      <div className="board-shell">
+      <div className="board-status">
         <SyncButton syncing={syncing} onClick={syncScreen} />
         <ConnectionBanner connected={connected} error={error} />
+      </div>
+      <div className="board-shell">
         <QuestionHeader state={state} />
         <div className="board-scores">
           <TeamScore
