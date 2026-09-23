@@ -21,8 +21,9 @@ services:
       - key: FRONTEND_URL
         value: "*"
 
-  - type: static
+  - type: web
     name: mexicanos-frontend
+    runtime: static
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: dist
