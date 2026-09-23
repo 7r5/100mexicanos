@@ -331,13 +331,6 @@ function Host() {
             <button className="primary" onClick={() => action("game:new-card")}>
               Nueva pregunta
             </button>
-            <button
-              className="secondary"
-              onClick={() => action("game:skip-card")}
-              disabled={!card}
-            >
-              Saltar pregunta
-            </button>
           </div>
         </div>
         <div className="control-panel strikes-panel">
