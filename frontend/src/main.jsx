@@ -90,11 +90,14 @@ function send(event, payload = {}) {
   });
 }
 
-function TeamScore({ name, value, color }) {
+function TeamScore({ name, value, color, strikes }) {
   return (
-    <div className={`team-score ${color}`}>
-      <span>{name}</span>
-      <strong>{value}</strong>
+    <div className={`team-score-group ${color}`}>
+      <div className="team-score">
+        <span>{name}</span>
+        <strong>{value}</strong>
+      </div>
+      <Strikes count={strikes} />
     </div>
   );
 }
@@ -163,11 +166,14 @@ function SyncButton({ syncing, onClick }) {
   );
 }
 
-function StrikeOverlay({ team, count }) {
+function StrikeOverlay({ team, count, name }) {
   if (!team) return null;
   return (
-    <div className="board-strike-overlay" aria-live="assertive">
-      <span key={`${team}-${count}`}>{"X".repeat(count || 1)}</span>
+    <div className={`board-strike-overlay ${team}`} aria-live="assertive">
+      <span key={`${team}-${count}`}>
+        <b>{name}</b>
+        <strong>{"X".repeat(count || 1)}</strong>
+      </span>
     </div>
   );
 }
@@ -211,6 +217,7 @@ function Board() {
         <StrikeOverlay
           team={state.lastStrikeTeam}
           count={state.strikes?.[state.lastStrikeTeam] || 0}
+          name={teamNames[state.lastStrikeTeam]}
         />
         <QuestionHeader state={state} />
         <div className="board-scores">
@@ -218,11 +225,13 @@ function Board() {
             name={teamNames.red}
             value={state.scores.red}
             color="red"
+            strikes={state.strikes?.red || 0}
           />
           <TeamScore
             name={teamNames.white}
             value={state.scores.white}
             color="white"
+            strikes={state.strikes?.white || 0}
           />
         </div>
         <section className="answer-board" aria-live="polite">
@@ -245,13 +254,6 @@ function Board() {
           })}
         </section>
         <div className="board-footer">
-          <div className="board-strikes">
-            <Strikes count={state.strikes?.red || 0} label={teamNames.red} />
-            <Strikes
-              count={state.strikes?.white || 0}
-              label={teamNames.white}
-            />
-          </div>
           <span className="connection">
             {connected ? "EN VIVO" : "RECONECTANDO"}
           </span>
