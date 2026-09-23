@@ -156,7 +156,7 @@ function TeamScore({ name, value, color, strikes }) {
 function QuestionHeader({ state }) {
   return (
     <header className="question-header">
-      <div className="show-badge">100</div>
+      <div className="show-badge">99</div>
       <p className="eyebrow">La encuesta dice</p>
       <h1>{state.currentCard?.question || "Esperando al host"}</h1>
     </header>
@@ -504,7 +504,7 @@ function Host() {
       <div className="host-topbar">
         <div>
           <span className="eyebrow">PANEL DE HOST</span>
-          <h1>100 Mexicanos Dijeron</h1>
+          <h1>99 Personas Dijeron</h1>
         </div>
         <div className="host-top-actions">
           <SyncButton syncing={syncing} onClick={syncScreen} />
@@ -542,28 +542,61 @@ function Host() {
             )}
           </div>
         </div>
-        <div className="control-panel sound-panel">
+        <div className="control-panel answers-panel">
           <div className="panel-heading">
-            <span>Sonidos</span>
-            <strong>Vista jugador</strong>
+            <span>Revelar respuesta</span>
+            <strong>Acumulado: {card?.roundPoints || 0}</strong>
           </div>
-          <div className="sound-grid">
-            {soundLibrary.length === 0 && (
-              <span className="empty-state">Cargando sonidos...</span>
-            )}
-            {soundLibrary.map((sound) => {
-              const isPlaying = playingSoundKey === sound.key;
-              return (
-                <button
-                  key={sound.key}
-                  className={`secondary sound-choice ${isPlaying ? "playing" : ""}`}
-                  onClick={() => playSoundToViewer(sound)}
-                >
-                  <span>{sound.label}</span>
-                  <small>{isPlaying ? "■ stop" : "▶ play"}</small>
-                </button>
-              );
-            })}
+          {(card?.answers || []).map((answer, index) => {
+            const reveal = card.revealed[index];
+            return (
+              <div
+                className={`host-answer ${reveal ? "revealed" : ""}`}
+                aria-disabled={Boolean(reveal)}
+              >
+                <span>
+                  <b>{index + 1}</b>
+                  {answer}
+                  <small>{card.points[index]} puntos</small>
+                </span>
+                <div>
+                  <button
+                    className="secondary"
+                    onClick={() =>
+                      action("game:reveal", { answerIndex: index })
+                    }
+                    disabled={Boolean(reveal)}
+                  >
+                    Revelar
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+          {card && !card.awardedTo && !card.revealed?.every(Boolean) && (
+            <small className="award-round-hint">
+              Las respuestas sin revelar se mostrarán al público sin sumar
+              puntos.
+            </small>
+          )}
+          <div className="award-round-actions">
+            <strong>
+              {state.strikes?.red >= 3 || state.strikes?.white >= 3
+                ? `Robo: ¿quién se lleva los ${card?.roundPoints || 0} puntos?`
+                : `¿A quién van los ${card?.roundPoints || 0} puntos?`}
+            </strong>
+            <button
+              className="red-button"
+              onClick={() => action("game:award-round", { team: "red" })}
+            >
+              {displayTeamNames.red}
+            </button>
+            <button
+              className="light-button"
+              onClick={() => action("game:award-round", { team: "white" })}
+            >
+              {displayTeamNames.white}
+            </button>
           </div>
         </div>
         <div className="control-panel strikes-panel">
@@ -644,63 +677,28 @@ function Host() {
               </button>
             )}
         </div>
-        <div className="control-panel answers-panel">
+        <div className="control-panel sound-panel">
           <div className="panel-heading">
-            <span>Revelar respuesta</span>
-            <strong>Acumulado: {card?.roundPoints || 0}</strong>
+            <span>Sonidos</span>
+            <strong>Vista jugador</strong>
           </div>
-          {(card?.answers || []).map((answer, index) => {
-            const reveal = card.revealed[index];
-            return (
-              <div
-                className={`host-answer ${reveal ? "revealed" : ""}`}
-                aria-disabled={Boolean(reveal)}
-              >
-                <span>
-                  <b>{index + 1}</b>
-                  {answer}
-                  <small>{card.points[index]} puntos</small>
-                </span>
-                <div>
-                  <button
-                    className="secondary"
-                    onClick={() =>
-                      action("game:reveal", { answerIndex: index })
-                    }
-                    disabled={Boolean(reveal)}
-                  >
-                    Revelar
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-          {card && !card.awardedTo && !card.revealed?.every(Boolean) && (
-            <small className="award-round-hint">
-              Las respuestas sin revelar se mostrarán al público sin sumar
-              puntos.
-            </small>
-          )}
-          <div className="award-round-actions">
-            <strong>
-              {state.strikes?.red >= 3 || state.strikes?.white >= 3
-                ? `Robo: ¿quién se lleva los ${card?.roundPoints || 0} puntos?`
-                : `¿A quién van los ${card?.roundPoints || 0} puntos?`}
-            </strong>
-            <button
-              className="red-button"
-              onClick={() => action("game:award-round", { team: "red" })}
-              disabled={!card || Boolean(card.awardedTo)}
-            >
-              {displayTeamNames.red}
-            </button>
-            <button
-              className="light-button"
-              onClick={() => action("game:award-round", { team: "white" })}
-              disabled={!card || Boolean(card.awardedTo)}
-            >
-              {displayTeamNames.white}
-            </button>
+          <div className="sound-grid">
+            {soundLibrary.length === 0 && (
+              <span className="empty-state">Cargando sonidos...</span>
+            )}
+            {soundLibrary.map((sound) => {
+              const isPlaying = playingSoundKey === sound.key;
+              return (
+                <button
+                  key={sound.key}
+                  className={`secondary sound-choice ${isPlaying ? "playing" : ""}`}
+                  onClick={() => playSoundToViewer(sound)}
+                >
+                  <span>{sound.label}</span>
+                  <small>{isPlaying ? "■ stop" : "▶ play"}</small>
+                </button>
+              );
+            })}
           </div>
         </div>
         <div className="control-panel score-panel">
@@ -817,6 +815,29 @@ function App() {
     <Board />
   );
 }
+
+function configurePwaShell() {
+  const isHost = location.pathname.toLowerCase().startsWith("/host");
+  const manifestHref = isHost
+    ? "/manifest-host.webmanifest"
+    : "/manifest-board.webmanifest";
+  const iconHref = isHost
+    ? "/icons/icon-host-192.svg"
+    : "/icons/icon-board-192.svg";
+  const title = isHost ? "99 Personas Dijeron - Host" : "99 Personas Dijeron";
+  document.title = title;
+  document.getElementById("app-manifest")?.setAttribute("href", manifestHref);
+  document.getElementById("app-icon")?.setAttribute("href", iconHref);
+  document.getElementById("app-apple-icon")?.setAttribute("href", iconHref);
+  document
+    .querySelector('meta[name="apple-mobile-web-app-title"]')
+    ?.setAttribute("content", title);
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
+  }
+}
+
+configurePwaShell();
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <App />
