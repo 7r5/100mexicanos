@@ -231,7 +231,9 @@ function StrikeOverlay({ team, count, name, stolenBy }) {
       <span key={`${team}-${count}`}>
         <b>{name}</b>
         <strong>{"X".repeat(count || 1)}</strong>
-        {count === 2 && <em className="steal-warning">¡Prepárense para robar!</em>}
+        {count === 2 && (
+          <em className="steal-warning">¡Prepárense para robar!</em>
+        )}
       </span>
     </div>
   );
