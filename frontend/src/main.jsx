@@ -2,26 +2,58 @@ import React, { StrictMode, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { io } from "socket.io-client";
 import "./styles.css";
-import startSound from "./sounds/a-jugar.mp3";
-import correctSound from "./sounds/correcto.mp3";
-import incorrectSound from "./sounds/incorrecto.mp3";
-import victorySound from "./sounds/triunfo.mp3";
 
 const apiHost = import.meta.env.VITE_API_HOST || "localhost:10000";
 const apiUrl = apiHost.startsWith("http")
   ? apiHost
   : `${location.protocol === "https:" ? "https" : "http"}://${apiHost}`;
 const hostToken = import.meta.env.VITE_HOST_TOKEN || "dev-host";
-function playGameSound(type) {
-  const sounds = {
-    start: startSound,
-    correct: correctSound,
-    incorrect: incorrectSound,
-    victory: victorySound,
-  };
-  const audio = new Audio(sounds[type]);
+const soundModules = import.meta.glob("./sounds/*.{mp3,wav,ogg,m4a,aac,flac}", {
+  eager: false,
+  import: "default",
+});
+
+function normalizeSoundKey(filePath) {
+  return filePath
+    .split("/")
+    .pop()
+    .replace(/\.[^/.]+$/, "")
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+async function getSoundLibrary() {
+  const entries = await Promise.all(
+    Object.entries(soundModules).map(async ([filePath, importer]) => {
+      const src = await importer();
+      const key = normalizeSoundKey(filePath);
+      return {
+        key,
+        label: key.replace(/\b\w/g, (char) => char.toUpperCase()),
+        src,
+      };
+    }),
+  );
+  return entries.sort((left, right) => left.label.localeCompare(right.label));
+}
+
+function playAudioSource(src) {
+  const audio = new Audio(src);
   audio.volume = 0.9;
   audio.play().catch(() => {});
+}
+
+function playGameSound(type) {
+  const sounds = {
+    start: "/sounds/a-jugar.mp3",
+    correct: "/sounds/correcto.mp3",
+    incorrect: "/sounds/incorrecto.mp3",
+    victory: "/sounds/triunfo.mp3",
+  };
+  const src = sounds[type];
+  if (!src) return;
+  playAudioSource(src);
 }
 const blankState = {
   scores: { red: 0, white: 0 },
@@ -199,6 +231,7 @@ function RoundPoints({ points }) {
 function Board() {
   const { state, connected, error } = useGameState(false);
   const [syncing, setSyncing] = useState(false);
+  const [soundLibrary, setSoundLibrary] = useState([]);
   const card = state.currentCard;
   const teamNames = state.teamNames || blankState.teamNames;
   const previousCard = useRef(null);
@@ -210,6 +243,28 @@ function Board() {
     await send("state:request");
     setSyncing(false);
   }
+  useEffect(() => {
+    let active = true;
+    getSoundLibrary().then((library) => {
+      if (active) setSoundLibrary(library);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+  useEffect(() => {
+    if (!window.gameSocket) return undefined;
+    const onPlaySound = ({ soundKey }) => {
+      if (!soundKey) return;
+      const sound = soundLibrary.find((entry) => entry.key === soundKey);
+      if (!sound) return;
+      playAudioSource(sound.src);
+    };
+    window.gameSocket.on("sound:play", onPlaySound);
+    return () => {
+      window.gameSocket.off("sound:play", onPlaySound);
+    };
+  }, [soundLibrary]);
   useEffect(() => {
     const previousRevealed = (previousCard.current?.revealed || []).filter(
       Boolean,
@@ -312,6 +367,7 @@ function Host() {
   const [teamNames, setTeamNames] = useState(
     state.teamNames || blankState.teamNames,
   );
+  const [soundLibrary, setSoundLibrary] = useState([]);
   const [message, setMessage] = useState("");
   const [syncing, setSyncing] = useState(false);
   useEffect(
@@ -322,6 +378,28 @@ function Host() {
     () => setTeamNames(state.teamNames || blankState.teamNames),
     [state.teamNames?.red, state.teamNames?.white],
   );
+  useEffect(() => {
+    let active = true;
+    getSoundLibrary().then((library) => {
+      if (active) setSoundLibrary(library);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+  useEffect(() => {
+    if (!window.gameSocket) return undefined;
+    const onPlaySound = ({ soundKey }) => {
+      if (!soundKey) return;
+      const sound = soundLibrary.find((entry) => entry.key === soundKey);
+      if (!sound) return;
+      playAudioSource(sound.src);
+    };
+    window.gameSocket.on("sound:play", onPlaySound);
+    return () => {
+      window.gameSocket.off("sound:play", onPlaySound);
+    };
+  }, [soundLibrary]);
   const card = state.currentCard;
   async function action(event, payload) {
     const result = await send(event, payload);
@@ -335,6 +413,17 @@ function Host() {
         : result?.error || "No se pudo completar la accion",
     );
     window.setTimeout(() => setMessage(""), 2200);
+  }
+  async function playSoundToViewer(sound) {
+    const result = await send("game:play-sound", { soundKey: sound.key });
+    if (result?.ok) {
+      playAudioSource(sound.src);
+      setMessage(`Reproduciendo: ${sound.label}`);
+      window.setTimeout(() => setMessage(""), 1800);
+      return;
+    }
+    setMessage(result?.error || "No se pudo reproducir el sonido");
+    window.setTimeout(() => setMessage(""), 1800);
   }
   const displayTeamNames = state.teamNames || teamNames;
   async function syncScreen() {
@@ -385,6 +474,27 @@ function Host() {
                 Revelar pregunta
               </button>
             )}
+          </div>
+        </div>
+        <div className="control-panel sound-panel">
+          <div className="panel-heading">
+            <span>Sonidos</span>
+            <strong>Vista jugador</strong>
+          </div>
+          <div className="sound-list">
+            {soundLibrary.length === 0 && (
+              <span className="empty-state">Cargando sonidos...</span>
+            )}
+            {soundLibrary.map((sound) => (
+              <button
+                key={sound.key}
+                className="secondary sound-choice"
+                onClick={() => playSoundToViewer(sound)}
+              >
+                <span>{sound.label}</span>
+                <small>play</small>
+              </button>
+            ))}
           </div>
         </div>
         <div className="control-panel strikes-panel">

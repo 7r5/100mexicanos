@@ -336,6 +336,14 @@ hostNamespace.on('connection', (socket) => {
             reply(ack, { ok: true });
         } catch (error) { reply(ack, { ok: false, error: error.message }); }
     });
+    socket.on('game:play-sound', async ({ soundKey }, ack) => {
+        try {
+            const key = String(soundKey || '').trim();
+            if (!key) throw new Error('Sonido invalido');
+            io.emit('sound:play', { soundKey: key });
+            reply(ack, { ok: true });
+        } catch (error) { reply(ack, { ok: false, error: error.message }); }
+    });
     socket.on('game:reset-scores', async (_payload, ack) => {
         try { resetScores(); await saveState(); broadcastState(); reply(ack, { ok: true }); }
         catch (error) { reply(ack, { ok: false, error: error.message }); }
