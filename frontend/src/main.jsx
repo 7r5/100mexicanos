@@ -61,16 +61,25 @@ function playAudioSource(src, onEnded) {
   return audio;
 }
 
-function playGameSound(type) {
-  const sounds = {
-    start: "/sounds/a-jugar.mp3",
-    correct: "/sounds/correcto.mp3",
-    incorrect: "/sounds/incorrecto.mp3",
-    victory: "/sounds/triunfo.mp3",
+let soundLibraryPromise = null;
+function ensureSoundLibrary() {
+  if (!soundLibraryPromise) soundLibraryPromise = getSoundLibrary();
+  return soundLibraryPromise;
+}
+
+async function playGameSound(type) {
+  const keys = {
+    start: "a jugar",
+    correct: "correcto",
+    incorrect: "incorrecto",
+    victory: "triunfo",
   };
-  const src = sounds[type];
-  if (!src) return;
-  playAudioSource(src);
+  const key = keys[type];
+  if (!key) return;
+  const library = await ensureSoundLibrary();
+  const sound = library.find((entry) => entry.key === key);
+  if (!sound) return;
+  playAudioSource(sound.src);
 }
 const blankState = {
   scores: { red: 0, white: 0 },
