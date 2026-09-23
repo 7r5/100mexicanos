@@ -143,13 +143,13 @@ Una falla común del auto,Batería descargada,Llanta ponchada,Sin gasolina,Motor
 Un vehículo de emergencia,Ambulancia,Patrulla,Camión de bomberos,Helicóptero,Rescate,Grúa
 Algo que haces para cruzar la calle,Mirar a ambos lados,Usar el puente,Esperar el semáforo,Caminar por la esquina,Seguir al grupo,Usar el paso peatonal
 Algo que encuentras en una calle,Semáforo,Tiendas,Árboles,Postes,Baches,Señales
-Un lugar donde compras ropa,Tienda,Centro comercial,Tianguis,Internet,Outlet, Boutique
+Un lugar donde compras ropa,Tienda,Centro comercial,Tianguis,Internet,Outlet,Boutique
 Una prenda para la parte superior,Playera,Blusa,Camisa,Suéter,Chamarra,Chaleco
 Una prenda para la parte inferior,Pantalón,Falda,Short,Jeans,Leggings,Traje de baño
-Un tipo de calzado,Tennis, zapatos, botas, sandalias, huaraches, tacones
+Un tipo de calzado,Tenis,Zapatos,Botas,Sandalias,Huaraches,Tacones
 Algo que usas como accesorio,Reloj,Collar,Aretes,Cinturón,Sombrero,Bufanda
 Algo que compras para una boda,Vestido,Traje,Zapatos,Regalo,Corbata,Maquillaje
-Algo que usas en una entrevista,Traje,Perfume,Carpeta,Corbata, zapatos formales,Currículum
+Algo que usas en una entrevista,Traje,Perfume,Carpeta,Corbata,Zapatos formales,Currículum
 Algo que se pone un bebé,Pañal,Body,Gorrito,Calcetines,Babero,Suéter
 Un color de ropa muy común,Negro,Azul,Blanco,Rojo,Gris,Verde
 Algo que haces antes de salir,Peinarte,Vestirte,Buscar llaves,Revisar el clima,Perfumarte,Apagar luces
@@ -236,14 +236,14 @@ Algo que se entrega en la escuela,Tarea,Examen,Proyecto,Ensayo,Calificaciones,Bo
 Una carrera universitaria,Medicina,Derecho,Ingeniería,Arquitectura,Contaduría,Psicología
 Algo que haces al graduarte,Celebrar,Tomar fotos,Recibir diploma,Abrazar familia,Viajar,Conseguir trabajo
 Algo que aprendes en casa,Cocinar,Limpiar,Ahorrar,Ordenar,Reparar,Respetar
-Un consejo de los padres,Estudia,Cuídate,No mientas,Ahorra dinero,Respeta, come sano
+Un consejo de los padres,Estudia,Cuídate,No mientas,Ahorra dinero,Respeta,Come sano
 Algo que un niño aprende primero,Caminar,Hablar,Comer,Leer,Compartir,Saludar
 Un juego infantil,Escondidas,Avioncito,Canicas,Quemados,Las traes,Stop
 Un juguete clásico,Muñeca,Carrito,Pelota,Yo-yo,Rompecabezas,Canicas
 Un programa para niños,Dibujos animados,Series,Noticias infantiles,Concursos,Documentales,Programas educativos
 Un personaje de cuentos,Caperucita Roja,Pinocho,Blancanieves,Peter Pan,El Principito,Alicia
 Un superhéroe conocido,Superman,Batman,Spider-Man,Hulk,Wonder Woman,Iron Man
-Algo que ves en una caricatura,Animales,Superhéroes,Princesas,Chistes,Monstruos, Aventuras
+Algo que ves en una caricatura,Animales,Superhéroes,Princesas,Chistes,Monstruos,Aventuras
 Un género de película,Comedia,Acción,Terror,Romance,Animación,Drama
 Algo que haces en el cine,Ver películas,Comer palomitas,Tomar refresco,Comprar boletos,Sentarte,Reír
 Un tipo de programa de televisión,Noticias,Deportes,Concursos,Series,Novelas,Documentales
@@ -254,7 +254,7 @@ Algo que escuchas en la radio,Música,Noticias,Publicidad,Entrevistas,Deportes,T
 Un instrumento de mariachi,Violín,Trompeta,Guitarra,Vihuela,Guitarrón,Arpa
 Un género musical,Rock,Pop,Reguetón,Ranchera,Salsa,Cumbia
 Algo que haces con música,Bailar,Cantar,Relajarte,Limpiar,Estudiar,Conducir
-Un cantante mexicano famoso,Luis Miguel,Juan Gabriel,Pedro Infante, Vicente Fernández,Thalía,José José
+Un cantante mexicano famoso,Luis Miguel,Juan Gabriel,Pedro Infante,Vicente Fernández,Thalía,José José
 Algo que se usa en un concierto,Boleto,Escenario,Micrófono,Bocinas,Luces,Artistas
 Un lugar para escuchar música,Concierto,Casa,Radio,Bar,Auditorio,Auto
 Algo que se hace en un museo,Observar,Aprender,Leer,Tomar fotos,Recorrer,Escuchar guía
@@ -271,10 +271,10 @@ Algo que hay en un estadio,Gradas,Cancha,Jugadores,Árbitro,Entradas,Anuncios
 Un equipo deportivo mexicano,Chivas,América,Cruz Azul,Pumas,Tigres,Monterrey
 Algo que usa un futbolista,Uniforme,Espinilleras,Tenis,Canilleras,Guantes,Balón
 Algo que haces antes de hacer ejercicio,Estirar,Calentar,Tomar agua,Cambiarte,Escuchar música,Respirar
-Un ejercicio común,Correr,Abdominales,Sentadillas,Pesas, lagartijas,Estiramiento
+Un ejercicio común,Correr,Abdominales,Sentadillas,Pesas,Lagartijas,Estiramiento
 Un lugar para hacer ejercicio,Gimnasio,Parque,Cancha,Casa,Alberca,Estadio
 Algo que beneficia la salud,Ejercicio,Agua,Sueño,Frutas,Descanso,Visitas médicas
-Algo que evita enfermedades,Lavarse las manos,Vacunarse,Comer sano,Dormir,Limpiar, hacer ejercicio
+Algo que evita enfermedades,Lavarse las manos,Vacunarse,Comer sano,Dormir,Limpiar,Hacer ejercicio
 Un síntoma de enfermedad,Fiebre,Tos,Dolor,Cansancio,Náusea,Mareo
 Algo que hay en un consultorio,Escritorio,Sillas,Revistas,Báscula,Termómetro,Expedientes
 Un especialista médico,Dentista,Pediatra,Cardiólogo,Dermatólogo,Ginecólogo,Psicólogo
