@@ -299,6 +299,17 @@ hostNamespace.on('connection', (socket) => {
             reply(ack, { ok: true });
         } catch (error) { reply(ack, { ok: false, error: error.message }); }
     });
+    socket.on('game:strike-undo', async ({ team }, ack) => {
+        try {
+            if (!['red', 'white'].includes(team)) throw new Error('Equipo invalido');
+            state.strikes ??= { red: 0, white: 0 };
+            state.strikes[team] = Math.max(0, state.strikes[team] - 1);
+            if (state.lastStrikeTeam === team && state.strikes[team] === 0) state.lastStrikeTeam = null;
+            await saveState();
+            broadcastState();
+            reply(ack, { ok: true });
+        } catch (error) { reply(ack, { ok: false, error: error.message }); }
+    });
     socket.on('game:steal', async ({ fromTeam, toTeam }, ack) => {
         try {
             if (!state.currentCard || !['red', 'white'].includes(fromTeam) || !['red', 'white'].includes(toTeam) || fromTeam === toTeam) throw new Error('Robo invalido');

@@ -582,6 +582,13 @@ function Host() {
           >
             X {displayTeamNames.red}
           </button>
+          <button
+            className="secondary wide"
+            onClick={() => action("game:strike-undo", { team: "red" })}
+            disabled={!(state.strikes?.red > 0)}
+          >
+            Quitar tache {displayTeamNames.red}
+          </button>
           {state.strikes?.red === 2 && (
             <small className="steal-reminder">
               ¡Prepara al {displayTeamNames.white} para robar!
@@ -597,6 +604,13 @@ function Host() {
             disabled={!card || (state.strikes?.white || 0) >= 3}
           >
             X {displayTeamNames.white}
+          </button>
+          <button
+            className="secondary wide"
+            onClick={() => action("game:strike-undo", { team: "white" })}
+            disabled={!(state.strikes?.white > 0)}
+          >
+            Quitar tache {displayTeamNames.white}
           </button>
           {state.strikes?.white === 2 && (
             <small className="steal-reminder">
