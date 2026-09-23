@@ -83,12 +83,29 @@ function Strikes({ count }) {
   );
 }
 
+function ScreenNav({ current }) {
+  return (
+    <nav
+      className={`screen-nav ${current}`}
+      aria-label="Navegacion de pantallas"
+    >
+      <a className={current === "board" ? "active" : ""} href="/">
+        Tablero
+      </a>
+      <a className={current === "host" ? "active" : ""} href="/host">
+        Host
+      </a>
+    </nav>
+  );
+}
+
 function Board() {
   const { state, connected } = useGameState(false);
   const card = state.currentCard;
   return (
     <main className="board-page">
       <div className="sunburst" />
+      <ScreenNav current="board" />
       <div className="board-shell">
         <QuestionHeader state={state} />
         <div className="board-scores">
@@ -145,6 +162,7 @@ function Host() {
   }
   return (
     <main className="host-page">
+      <ScreenNav current="host" />
       <div className="host-topbar">
         <div>
           <span className="eyebrow">PANEL DE HOST</span>
