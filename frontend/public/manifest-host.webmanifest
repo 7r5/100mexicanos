@@ -1,0 +1,16 @@
+{
+  "name": "100 Mexicanos Dijeron - Host",
+  "short_name": "Host 100Mex",
+  "description": "Panel de control del host de 100 Mexicanos Dijeron",
+  "id": "/host",
+  "start_url": "/host?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#100b2d",
+  "theme_color": "#f3d83b",
+  "icons": [
+    { "src": "/icons/icon-host-192.svg", "sizes": "192x192", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icons/icon-host-512.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

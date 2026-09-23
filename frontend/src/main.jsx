@@ -817,6 +817,31 @@ function App() {
     <Board />
   );
 }
+
+function configurePwaShell() {
+  const isHost = location.pathname.toLowerCase().startsWith("/host");
+  const manifestHref = isHost
+    ? "/manifest-host.webmanifest"
+    : "/manifest-board.webmanifest";
+  const iconHref = isHost
+    ? "/icons/icon-host-192.svg"
+    : "/icons/icon-board-192.svg";
+  const title = isHost
+    ? "100 Mexicanos Dijeron - Host"
+    : "100 Mexicanos Dijeron";
+  document.title = title;
+  document.getElementById("app-manifest")?.setAttribute("href", manifestHref);
+  document.getElementById("app-icon")?.setAttribute("href", iconHref);
+  document.getElementById("app-apple-icon")?.setAttribute("href", iconHref);
+  document
+    .querySelector('meta[name="apple-mobile-web-app-title"]')
+    ?.setAttribute("content", title);
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
+  }
+}
+
+configurePwaShell();
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <App />
