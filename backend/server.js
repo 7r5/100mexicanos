@@ -173,6 +173,10 @@ const httpServer = createServer(app);
 const io = new Server(httpServer, { cors: { origin: allowedOrigin === '*' ? true : allowedOrigin } });
 const hostNamespace = io.of('/host');
 hostNamespace.use(requireHost);
+const sendCurrentState = (socket, ack) => {
+    socket.emit('state:update', publicState());
+    if (typeof ack === 'function') ack({ ok: true });
+};
 const broadcastState = () => {
     const nextState = publicState();
     io.emit('state:update', nextState);
@@ -180,10 +184,12 @@ const broadcastState = () => {
 };
 
 io.on('connection', (socket) => {
-    socket.emit('state:update', publicState());
+    sendCurrentState(socket);
+    socket.on('state:request', (_payload, ack) => sendCurrentState(socket, ack));
 });
 hostNamespace.on('connection', (socket) => {
-    socket.emit('state:update', publicState());
+    sendCurrentState(socket);
+    socket.on('state:request', (_payload, ack) => sendCurrentState(socket, ack));
     const reply = (ack, result) => {
         if (typeof ack === 'function') ack(result);
     };

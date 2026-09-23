@@ -154,12 +154,26 @@ function ConnectionBanner({ connected, error }) {
   );
 }
 
+function SyncButton({ syncing, onClick }) {
+  return (
+    <button className="sync-button" onClick={onClick} disabled={syncing}>
+      {syncing ? "Sincronizando..." : "↻ Sincronizar"}
+    </button>
+  );
+}
+
 function Board() {
   const { state, connected, error } = useGameState(false);
+  const [syncing, setSyncing] = useState(false);
   const card = state.currentCard;
   const teamNames = state.teamNames || blankState.teamNames;
   const previousCard = useRef(null);
   const previousStrikes = useRef(state.strikes || blankState.strikes);
+  async function syncScreen() {
+    setSyncing(true);
+    await send("state:request");
+    setSyncing(false);
+  }
   useEffect(() => {
     const previousRevealed = (previousCard.current?.revealed || []).filter(
       Boolean,
@@ -181,6 +195,7 @@ function Board() {
       <div className="sunburst" />
       <ScreenNav current="board" />
       <div className="board-shell">
+        <SyncButton syncing={syncing} onClick={syncScreen} />
         <ConnectionBanner connected={connected} error={error} />
         <QuestionHeader state={state} />
         <div className="board-scores">
@@ -238,6 +253,7 @@ function Host() {
     state.teamNames || blankState.teamNames,
   );
   const [message, setMessage] = useState("");
+  const [syncing, setSyncing] = useState(false);
   useEffect(
     () => setScores(state.scores),
     [state.scores.red, state.scores.white],
@@ -259,6 +275,13 @@ function Host() {
     window.setTimeout(() => setMessage(""), 2200);
   }
   const displayTeamNames = state.teamNames || teamNames;
+  async function syncScreen() {
+    setSyncing(true);
+    const result = await send("state:request");
+    setMessage(result?.ok ? "Pantalla sincronizada" : result?.error);
+    setSyncing(false);
+    window.setTimeout(() => setMessage(""), 2200);
+  }
   return (
     <main className="host-page">
       <ScreenNav current="host" />
@@ -267,9 +290,12 @@ function Host() {
           <span className="eyebrow">PANEL DE HOST</span>
           <h1>100 Mexicanos Dijeron</h1>
         </div>
-        <span className={`status-pill ${connected ? "online" : ""}`}>
-          {connected ? "Conectado" : "Sin conexión"}
-        </span>
+        <div className="host-top-actions">
+          <SyncButton syncing={syncing} onClick={syncScreen} />
+          <span className={`status-pill ${connected ? "online" : ""}`}>
+            {connected ? "Conectado" : "Sin conexión"}
+          </span>
+        </div>
       </div>
       <ConnectionBanner connected={connected} error={error} />
       {error && (
