@@ -464,7 +464,7 @@ function Host() {
                     onClick={() =>
                       action("game:reveal", { answerIndex: index })
                     }
-                    disabled={Boolean(reveal) || !card.questionVisible}
+                    disabled={Boolean(reveal)}
                   >
                     Revelar
                   </button>

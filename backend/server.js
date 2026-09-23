@@ -143,7 +143,9 @@ function stateForViewer(isHost) {
         currentCard: {
             ...state.currentCard,
             question: '',
-            answers: []
+            answers: state.currentCard.answers.map((answer, index) =>
+                state.currentCard.revealed?.[index] ? answer : ''
+            )
         }
     };
 }
@@ -248,7 +250,6 @@ hostNamespace.on('connection', (socket) => {
     socket.on('game:reveal', async ({ answerIndex }, ack) => {
         try {
             if (!state.currentCard) throw new Error('Accion invalida');
-            if (!state.currentCard.questionVisible) throw new Error('Primero revela la pregunta');
             if (!Number.isInteger(answerIndex) || answerIndex < 0 || answerIndex > 5) throw new Error('Respuesta invalida');
             if (state.currentCard.revealed[answerIndex]) throw new Error('Respuesta ya revelada');
             const points = Number(state.currentCard.points[answerIndex]);
