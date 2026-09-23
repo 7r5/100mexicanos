@@ -231,6 +231,7 @@ function StrikeOverlay({ team, count, name, stolenBy }) {
       <span key={`${team}-${count}`}>
         <b>{name}</b>
         <strong>{"X".repeat(count || 1)}</strong>
+        {count === 2 && <em className="steal-warning">¡Prepárense para robar!</em>}
       </span>
     </div>
   );
@@ -560,6 +561,11 @@ function Host() {
           >
             X {displayTeamNames.red}
           </button>
+          {state.strikes?.red === 2 && (
+            <small className="steal-reminder">
+              ¡Prepara al {displayTeamNames.white} para robar!
+            </small>
+          )}
           <Strikes
             count={state.strikes?.white || 0}
             label={displayTeamNames.white}
@@ -571,6 +577,11 @@ function Host() {
           >
             X {displayTeamNames.white}
           </button>
+          {state.strikes?.white === 2 && (
+            <small className="steal-reminder">
+              ¡Prepara al {displayTeamNames.red} para robar!
+            </small>
+          )}
           {card &&
             state.strikes?.red >= 3 &&
             !card?.stolenBy &&
