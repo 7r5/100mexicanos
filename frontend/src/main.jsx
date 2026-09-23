@@ -289,7 +289,8 @@ function Board() {
     const previousRevealed = previousCard.current?.revealed || [];
     const currentRevealed = card?.revealed || [];
     const newlyScored = currentRevealed.some(
-      (reveal, index) => reveal && !reveal.displayOnly && !previousRevealed[index],
+      (reveal, index) =>
+        reveal && !reveal.displayOnly && !previousRevealed[index],
     );
     if (previousCard.current && newlyScored) {
       playGameSound("correct");
