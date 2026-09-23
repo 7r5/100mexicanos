@@ -21,6 +21,8 @@ const pool = process.env.DATABASE_URL
 const initialState = () => ({
     version: 1,
     scores: { red: 0, white: 0 },
+    teamNames: { red: 'ROJO', white: 'BLANCO' },
+    strikes: { red: 0, white: 0 },
     currentCard: null,
     usedCards: [],
     skippedCards: [],
@@ -123,6 +125,8 @@ async function saveState() {
 }
 
 function publicState() {
+    state.teamNames ??= { red: 'ROJO', white: 'BLANCO' };
+    state.strikes ??= { red: 0, white: 0 };
     return state;
 }
 
@@ -139,8 +143,10 @@ function chooseCard() {
         ...card,
         points: createPoints(),
         revealed: Array(6).fill(null),
-        wrongAnswers: 0
+        wrongAnswers: 0,
+        stolenBy: null
     };
+    state.strikes = { red: 0, white: 0 };
     state.status = 'playing';
     state.wrongAnswers = 0;
     return state.currentCard;
@@ -190,6 +196,7 @@ hostNamespace.on('connection', (socket) => {
             if (!state.currentCard) throw new Error('No hay tarjeta activa');
             state.skippedCards.push(state.currentCard.id);
             state.currentCard = null;
+            state.strikes = { red: 0, white: 0 };
             state.status = 'waiting';
             await saveState();
             io.emit('state:update', publicState());
@@ -201,28 +208,59 @@ hostNamespace.on('connection', (socket) => {
             if (!state.currentCard || !['red', 'white'].includes(team)) throw new Error('Accion invalida');
             if (!Number.isInteger(answerIndex) || answerIndex < 0 || answerIndex > 5) throw new Error('Respuesta invalida');
             if (state.currentCard.revealed[answerIndex]) throw new Error('Respuesta ya revelada');
-            const points = state.currentCard.points[answerIndex];
+            const points = Number(state.currentCard.points[answerIndex]);
+            const currentScore = Number(state.scores[team]);
+            if (!Number.isFinite(points) || !Number.isFinite(currentScore)) throw new Error('Puntuacion invalida');
             state.currentCard.revealed[answerIndex] = { team, points };
-            state.scores[team] += points;
+            state.scores[team] = currentScore + points;
             await saveState();
             io.emit('state:update', publicState());
             reply(ack, { ok: true });
         } catch (error) { reply(ack, { ok: false, error: error.message }); }
     });
-    socket.on('game:strike', async (_payload, ack) => {
+    socket.on('game:strike', async ({ team }, ack) => {
         try {
-            if (!state.currentCard) throw new Error('No hay tarjeta activa');
-            state.wrongAnswers = Math.min(3, state.wrongAnswers + 1);
+            if (!state.currentCard || !['red', 'white'].includes(team)) throw new Error('Equipo invalido');
+            state.strikes ??= { red: 0, white: 0 };
+            state.strikes[team] = Math.min(3, state.strikes[team] + 1);
             await saveState();
             io.emit('state:update', publicState());
             reply(ack, { ok: true });
+        } catch (error) { reply(ack, { ok: false, error: error.message }); }
+    });
+    socket.on('game:steal', async ({ fromTeam, toTeam }, ack) => {
+        try {
+            if (!state.currentCard || !['red', 'white'].includes(fromTeam) || !['red', 'white'].includes(toTeam) || fromTeam === toTeam) throw new Error('Robo invalido');
+            state.strikes ??= { red: 0, white: 0 };
+            if (state.strikes[fromTeam] < 3) throw new Error('El equipo aun no tiene tres equis');
+            if (state.currentCard.stolenBy) throw new Error('El robo ya fue realizado');
+            const roundPoints = state.currentCard.revealed.reduce((total, reveal) => total + (reveal?.team === fromTeam ? Number(reveal.points) : 0), 0);
+            state.scores[fromTeam] = Number(state.scores[fromTeam]) - roundPoints;
+            state.scores[toTeam] = Number(state.scores[toTeam]) + roundPoints;
+            state.currentCard.stolenBy = toTeam;
+            await saveState();
+            io.emit('state:update', publicState());
+            reply(ack, { ok: true, points: roundPoints });
         } catch (error) { reply(ack, { ok: false, error: error.message }); }
     });
     socket.on('game:set-scores', async ({ red, white }, ack) => {
         try {
-            const nextScores = { red: Number(red), white: Number(white) };
+            const nextScores = { red: Math.trunc(Number(red)), white: Math.trunc(Number(white)) };
             if (!Number.isInteger(nextScores.red) || !Number.isInteger(nextScores.white) || nextScores.red < 0 || nextScores.white < 0) throw new Error('Puntuacion invalida');
             state.scores = nextScores;
+            await saveState();
+            io.emit('state:update', publicState());
+            reply(ack, { ok: true });
+        } catch (error) { reply(ack, { ok: false, error: error.message }); }
+    });
+    socket.on('game:set-team-names', async ({ red, white }, ack) => {
+        try {
+            const teamNames = {
+                red: String(red || '').trim().slice(0, 24),
+                white: String(white || '').trim().slice(0, 24)
+            };
+            if (!teamNames.red || !teamNames.white) throw new Error('Los dos equipos necesitan nombre');
+            state.teamNames = teamNames;
             await saveState();
             io.emit('state:update', publicState());
             reply(ack, { ok: true });
