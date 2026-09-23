@@ -1,4 +1,4 @@
-import React, { StrictMode, useEffect, useState } from "react";
+import React, { StrictMode, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { io } from "socket.io-client";
 import "./styles.css";
@@ -8,8 +8,34 @@ const apiUrl = apiHost.startsWith("http")
   ? apiHost
   : `${location.protocol === "https:" ? "https" : "http"}://${apiHost}`;
 const hostToken = import.meta.env.VITE_HOST_TOKEN || "dev-host";
+let audioContext;
+
+function playGameSound(type) {
+  if (typeof window === "undefined") return;
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContext) return;
+  audioContext ||= new AudioContext();
+  const now = audioContext.currentTime;
+  const oscillator = audioContext.createOscillator();
+  const gain = audioContext.createGain();
+  oscillator.type = type === "strike" ? "sawtooth" : "triangle";
+  oscillator.frequency.setValueAtTime(type === "strike" ? 150 : 520, now);
+  oscillator.frequency.exponentialRampToValueAtTime(
+    type === "strike" ? 80 : 780,
+    now + 0.16,
+  );
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(0.16, now + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.2);
+  oscillator.connect(gain).connect(audioContext.destination);
+  oscillator.start(now);
+  oscillator.stop(now + 0.21);
+  audioContext.resume().catch(() => {});
+}
 const blankState = {
   scores: { red: 0, white: 0 },
+  teamNames: { red: "ROJO", white: "BLANCO" },
+  strikes: { red: 0, white: 0 },
   currentCard: null,
   wrongAnswers: 0,
   status: "waiting",
@@ -84,17 +110,14 @@ function QuestionHeader({ state }) {
   );
 }
 
-function Strikes({ count }) {
+function Strikes({ count, label }) {
   return (
-    <div className="strikes" aria-label={`${count} errores`}>
-      {[0, 1, 2].map((index) => (
-        <span
-          className={index < count ? "strike active" : "strike"}
-          key={index}
-        >
-          X
-        </span>
-      ))}
+    <div
+      className="strikes"
+      aria-label={`${label || "Equipo"}: ${count} errores`}
+    >
+      {label && <span className="strike-label">{label}</span>}
+      <span className="strike-count">{count ? "X".repeat(count) : "—"}</span>
     </div>
   );
 }
@@ -116,9 +139,14 @@ function ScreenNav({ current }) {
 }
 
 function ConnectionBanner({ connected, error }) {
-  const message = connected ? "Backend conectado · EN VIVO" : "Esperando backend · RECONECTANDO";
+  const message = connected
+    ? "Backend conectado · EN VIVO"
+    : "Esperando backend · RECONECTANDO";
   return (
-    <div className={`connection-banner ${connected ? "online" : "offline"}`} role="status">
+    <div
+      className={`connection-banner ${connected ? "online" : "offline"}`}
+      role="status"
+    >
       <span className="connection-dot" />
       <strong>{message}</strong>
       {error && <span>{error}</span>}
@@ -129,6 +157,25 @@ function ConnectionBanner({ connected, error }) {
 function Board() {
   const { state, connected, error } = useGameState(false);
   const card = state.currentCard;
+  const teamNames = state.teamNames || blankState.teamNames;
+  const previousCard = useRef(null);
+  const previousStrikes = useRef(state.strikes || blankState.strikes);
+  useEffect(() => {
+    const previousRevealed = (previousCard.current?.revealed || []).filter(
+      Boolean,
+    ).length;
+    const currentRevealed = (card?.revealed || []).filter(Boolean).length;
+    if (previousCard.current && currentRevealed > previousRevealed) {
+      playGameSound("reveal");
+    } else if (
+      (state.strikes?.red || 0) > previousStrikes.current.red ||
+      (state.strikes?.white || 0) > previousStrikes.current.white
+    ) {
+      playGameSound("strike");
+    }
+    previousCard.current = card;
+    previousStrikes.current = state.strikes || blankState.strikes;
+  }, [card, state.strikes?.red, state.strikes?.white]);
   return (
     <main className="board-page">
       <div className="sunburst" />
@@ -137,8 +184,16 @@ function Board() {
         <ConnectionBanner connected={connected} error={error} />
         <QuestionHeader state={state} />
         <div className="board-scores">
-          <TeamScore name="ROJO" value={state.scores.red} color="red" />
-          <TeamScore name="BLANCO" value={state.scores.white} color="white" />
+          <TeamScore
+            name={teamNames.red}
+            value={state.scores.red}
+            color="red"
+          />
+          <TeamScore
+            name={teamNames.white}
+            value={state.scores.white}
+            color="white"
+          />
         </div>
         <section className="answer-board" aria-live="polite">
           {(card?.answers || Array(6).fill("")).map((answer, index) => {
@@ -160,7 +215,13 @@ function Board() {
           })}
         </section>
         <div className="board-footer">
-          <Strikes count={state.wrongAnswers} />
+          <div className="board-strikes">
+            <Strikes count={state.strikes?.red || 0} label={teamNames.red} />
+            <Strikes
+              count={state.strikes?.white || 0}
+              label={teamNames.white}
+            />
+          </div>
           <span className="connection">
             {connected ? "EN VIVO" : "RECONECTANDO"}
           </span>
@@ -173,14 +234,23 @@ function Board() {
 function Host() {
   const { state, connected, error } = useGameState(true);
   const [scores, setScores] = useState(state.scores);
+  const [teamNames, setTeamNames] = useState(
+    state.teamNames || blankState.teamNames,
+  );
   const [message, setMessage] = useState("");
   useEffect(
     () => setScores(state.scores),
     [state.scores.red, state.scores.white],
   );
+  useEffect(
+    () => setTeamNames(state.teamNames || blankState.teamNames),
+    [state.teamNames?.red, state.teamNames?.white],
+  );
   const card = state.currentCard;
   async function action(event, payload) {
     const result = await send(event, payload);
+    if (result?.ok && event === "game:reveal") playGameSound("reveal");
+    if (result?.ok && event === "game:strike") playGameSound("strike");
     setMessage(
       result?.ok
         ? "Guardado"
@@ -188,6 +258,7 @@ function Host() {
     );
     window.setTimeout(() => setMessage(""), 2200);
   }
+  const displayTeamNames = state.teamNames || teamNames;
   return (
     <main className="host-page">
       <ScreenNav current="host" />
@@ -228,19 +299,53 @@ function Host() {
             </button>
           </div>
         </div>
-        <div className="control-panel">
+        <div className="control-panel strikes-panel">
           <div className="panel-heading">
             <span>Errores</span>
-            <strong>{state.wrongAnswers}/3</strong>
+            <strong>Por equipo</strong>
           </div>
-          <Strikes count={state.wrongAnswers} />
+          <Strikes
+            count={state.strikes?.red || 0}
+            label={displayTeamNames.red}
+          />
           <button
             className="danger wide"
-            onClick={() => action("game:strike")}
-            disabled={!card || state.wrongAnswers >= 3}
+            onClick={() => action("game:strike", { team: "red" })}
+            disabled={!card || (state.strikes?.red || 0) >= 3}
           >
-            Mandar X
+            X {displayTeamNames.red}
           </button>
+          <Strikes
+            count={state.strikes?.white || 0}
+            label={displayTeamNames.white}
+          />
+          <button
+            className="danger wide"
+            onClick={() => action("game:strike", { team: "white" })}
+            disabled={!card || (state.strikes?.white || 0) >= 3}
+          >
+            X {displayTeamNames.white}
+          </button>
+          {state.strikes?.red >= 3 && !card?.stolenBy && (
+            <button
+              className="steal-button wide"
+              onClick={() =>
+                action("game:steal", { fromTeam: "red", toTeam: "white" })
+              }
+            >
+              Robo: {displayTeamNames.white}
+            </button>
+          )}
+          {state.strikes?.white >= 3 && !card?.stolenBy && (
+            <button
+              className="steal-button wide"
+              onClick={() =>
+                action("game:steal", { fromTeam: "white", toTeam: "red" })
+              }
+            >
+              Robo: {displayTeamNames.red}
+            </button>
+          )}
         </div>
         <div className="control-panel answers-panel">
           <div className="panel-heading">
@@ -250,7 +355,10 @@ function Host() {
           {(card?.answers || []).map((answer, index) => {
             const reveal = card.revealed[index];
             return (
-              <div className="host-answer" key={answer}>
+              <div
+                className={`host-answer ${reveal ? "revealed" : ""}`}
+                aria-disabled={Boolean(reveal)}
+              >
                 <span>
                   <b>{index + 1}</b>
                   {answer}
@@ -258,12 +366,13 @@ function Host() {
                 </span>
                 <div>
                   <button
+                    className="red-button"
                     onClick={() =>
                       action("game:reveal", { answerIndex: index, team: "red" })
                     }
                     disabled={Boolean(reveal)}
                   >
-                    Rojo
+                    {displayTeamNames.red}
                   </button>
                   <button
                     className="light-button"
@@ -275,7 +384,7 @@ function Host() {
                     }
                     disabled={Boolean(reveal)}
                   >
-                    Blanco
+                    {displayTeamNames.white}
                   </button>
                 </div>
               </div>
@@ -288,24 +397,24 @@ function Host() {
             <strong>Corrección</strong>
           </div>
           <label>
-            Rojo
+            {displayTeamNames.red}
             <input
               type="number"
               min="0"
               value={scores.red}
               onChange={(event) =>
-                setScores({ ...scores, red: event.target.value })
+                setScores({ ...scores, red: Number(event.target.value) || 0 })
               }
             />
           </label>
           <label>
-            Blanco
+            {displayTeamNames.white}
             <input
               type="number"
               min="0"
               value={scores.white}
               onChange={(event) =>
-                setScores({ ...scores, white: event.target.value })
+                setScores({ ...scores, white: Number(event.target.value) || 0 })
               }
             />
           </label>
@@ -321,6 +430,34 @@ function Host() {
           >
             Reiniciar puntuaciones
           </button>
+          <div className="team-name-fields">
+            <label>
+              Nombre equipo rojo
+              <input
+                maxLength="24"
+                value={teamNames.red}
+                onChange={(event) =>
+                  setTeamNames({ ...teamNames, red: event.target.value })
+                }
+              />
+            </label>
+            <label>
+              Nombre equipo blanco
+              <input
+                maxLength="24"
+                value={teamNames.white}
+                onChange={(event) =>
+                  setTeamNames({ ...teamNames, white: event.target.value })
+                }
+              />
+            </label>
+            <button
+              className="secondary wide"
+              onClick={() => action("game:set-team-names", teamNames)}
+            >
+              Guardar nombres
+            </button>
+          </div>
         </div>
         <div className="control-panel reset-panel">
           <div className="panel-heading">
