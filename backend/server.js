@@ -279,7 +279,6 @@ hostNamespace.on('connection', (socket) => {
             if (!state.currentCard || !['red', 'white'].includes(team)) throw new Error('Equipo invalido');
             if (state.currentCard.awardedTo) throw new Error('La ronda ya fue asignada');
             state.strikes ??= { red: 0, white: 0 };
-            if (state.strikes[team] >= 3) throw new Error('El equipo con tres equis no puede recibir la ronda');
             const roundPoints = Number(state.currentCard.roundPoints || 0);
             state.scores[team] = Number(state.scores[team]) + roundPoints;
             state.currentCard.awardedTo = team;

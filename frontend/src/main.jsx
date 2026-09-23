@@ -642,22 +642,18 @@ function Host() {
                   puntos.
                 </small>
               )}
-              {state.strikes?.red < 3 && (
-                <button
-                  className="red-button"
-                  onClick={() => action("game:award-round", { team: "red" })}
-                >
-                  {displayTeamNames.red}
-                </button>
-              )}
-              {state.strikes?.white < 3 && (
-                <button
-                  className="light-button"
-                  onClick={() => action("game:award-round", { team: "white" })}
-                >
-                  {displayTeamNames.white}
-                </button>
-              )}
+              <button
+                className="red-button"
+                onClick={() => action("game:award-round", { team: "red" })}
+              >
+                {displayTeamNames.red}
+              </button>
+              <button
+                className="light-button"
+                onClick={() => action("game:award-round", { team: "white" })}
+              >
+                {displayTeamNames.white}
+              </button>
             </div>
           )}
         </div>
