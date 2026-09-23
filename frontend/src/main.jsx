@@ -156,7 +156,7 @@ function TeamScore({ name, value, color, strikes }) {
 function QuestionHeader({ state }) {
   return (
     <header className="question-header">
-      <div className="show-badge">100</div>
+      <div className="show-badge">99</div>
       <p className="eyebrow">La encuesta dice</p>
       <h1>{state.currentCard?.question || "Esperando al host"}</h1>
     </header>
@@ -504,7 +504,7 @@ function Host() {
       <div className="host-topbar">
         <div>
           <span className="eyebrow">PANEL DE HOST</span>
-          <h1>100 Mexicanos Dijeron</h1>
+          <h1>99 Personas Dijeron</h1>
         </div>
         <div className="host-top-actions">
           <SyncButton syncing={syncing} onClick={syncScreen} />
@@ -824,9 +824,7 @@ function configurePwaShell() {
   const iconHref = isHost
     ? "/icons/icon-host-192.svg"
     : "/icons/icon-board-192.svg";
-  const title = isHost
-    ? "100 Mexicanos Dijeron - Host"
-    : "100 Mexicanos Dijeron";
+  const title = isHost ? "99 Personas Dijeron - Host" : "99 Personas Dijeron";
   document.title = title;
   document.getElementById("app-manifest")?.setAttribute("href", manifestHref);
   document.getElementById("app-icon")?.setAttribute("href", iconHref);
