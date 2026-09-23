@@ -36,6 +36,7 @@ const blankState = {
   scores: { red: 0, white: 0 },
   teamNames: { red: "ROJO", white: "BLANCO" },
   strikes: { red: 0, white: 0 },
+  lastStrikeTeam: null,
   currentCard: null,
   wrongAnswers: 0,
   status: "waiting",
@@ -162,6 +163,15 @@ function SyncButton({ syncing, onClick }) {
   );
 }
 
+function StrikeOverlay({ team, count }) {
+  if (!team) return null;
+  return (
+    <div className="board-strike-overlay" aria-live="assertive">
+      <span key={`${team}-${count}`}>X</span>
+    </div>
+  );
+}
+
 function Board() {
   const { state, connected, error } = useGameState(false);
   const [syncing, setSyncing] = useState(false);
@@ -193,12 +203,15 @@ function Board() {
   return (
     <main className="board-page">
       <div className="sunburst" />
-      <ScreenNav current="board" />
       <div className="board-status">
         <SyncButton syncing={syncing} onClick={syncScreen} />
         <ConnectionBanner connected={connected} error={error} />
       </div>
       <div className="board-shell">
+        <StrikeOverlay
+          team={state.lastStrikeTeam}
+          count={state.strikes?.[state.lastStrikeTeam] || 0}
+        />
         <QuestionHeader state={state} />
         <div className="board-scores">
           <TeamScore
@@ -244,6 +257,7 @@ function Board() {
           </span>
         </div>
       </div>
+      <ScreenNav current="board" />
     </main>
   );
 }
@@ -286,7 +300,6 @@ function Host() {
   }
   return (
     <main className="host-page">
-      <ScreenNav current="host" />
       <div className="host-topbar">
         <div>
           <span className="eyebrow">PANEL DE HOST</span>
@@ -514,6 +527,7 @@ function Host() {
           {connected ? "Socket activo" : "Esperando backend"}
         </span>
       </footer>
+      <ScreenNav current="host" />
     </main>
   );
 }

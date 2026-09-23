@@ -23,6 +23,7 @@ const initialState = () => ({
     scores: { red: 0, white: 0 },
     teamNames: { red: 'ROJO', white: 'BLANCO' },
     strikes: { red: 0, white: 0 },
+    lastStrikeTeam: null,
     currentCard: null,
     usedCards: [],
     skippedCards: [],
@@ -147,6 +148,7 @@ function chooseCard() {
         stolenBy: null
     };
     state.strikes = { red: 0, white: 0 };
+    state.lastStrikeTeam = null;
     state.status = 'playing';
     state.wrongAnswers = 0;
     return state.currentCard;
@@ -208,6 +210,7 @@ hostNamespace.on('connection', (socket) => {
             state.skippedCards.push(state.currentCard.id);
             state.currentCard = null;
             state.strikes = { red: 0, white: 0 };
+            state.lastStrikeTeam = null;
             state.status = 'waiting';
             await saveState();
             broadcastState();
@@ -234,6 +237,7 @@ hostNamespace.on('connection', (socket) => {
             if (!state.currentCard || !['red', 'white'].includes(team)) throw new Error('Equipo invalido');
             state.strikes ??= { red: 0, white: 0 };
             state.strikes[team] = Math.min(3, state.strikes[team] + 1);
+            state.lastStrikeTeam = team;
             await saveState();
             broadcastState();
             reply(ack, { ok: true });

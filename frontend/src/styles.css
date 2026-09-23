@@ -6,7 +6,7 @@ body { margin: 0; min-width: 320px; min-height: 100vh; }
 button, input { font: inherit; }
 button { cursor: pointer; border: 0; }
 button:disabled { cursor: not-allowed; opacity: .42; }
-.screen-nav { position: fixed; z-index: 4; top: 18px; right: 22px; display: flex; gap: 4px; padding: 4px; background: rgba(9, 10, 18, .86); border: 1px solid rgba(255, 222, 53, .5); box-shadow: 0 8px 24px rgba(14, 5, 38, .25); }
+.screen-nav { position: relative; z-index: 4; display: flex; gap: 4px; align-self: center; margin-top: 22px; padding: 4px; background: rgba(9, 10, 18, .86); border: 1px solid rgba(255, 222, 53, .5); box-shadow: 0 8px 24px rgba(14, 5, 38, .25); }
 .screen-nav a { padding: 8px 13px; color: #b6b0c6; font: 800 13px/1 'Barlow Condensed'; letter-spacing: .08em; text-decoration: none; text-transform: uppercase; }
 .screen-nav a.active, .screen-nav a:hover { background: #f3d83b; color: #1c1437; }
 .sync-button { padding: 9px 13px; border: 1px solid #f3d83b; background: #f3d83b; color: #1c1437; font: 800 13px/1 'Barlow Condensed'; letter-spacing: .05em; text-transform: uppercase; }.sync-button:hover:not(:disabled) { background: #fff19a; }.sync-button:disabled { opacity: .65; }
@@ -20,13 +20,15 @@ button:disabled { cursor: not-allowed; opacity: .42; }
 .board-status .connection-banner { margin: 0; }
 .sunburst { position: absolute; inset: -50%; background: repeating-conic-gradient(from 4deg, rgba(255,255,255,.2) 0deg 6deg, transparent 6deg 17deg), radial-gradient(circle at center, #ffea3d 0 8%, #ff4376 32%, #6724cb 76%); animation: pulse 14s linear infinite; }
 .board-shell { width: min(1080px, 100%); position: relative; background: #090a12; border: clamp(7px, 1vw, 14px) solid #ffca3a; outline: 5px solid #8e263b; box-shadow: 0 0 0 10px #ffed91, 0 20px 60px rgba(22,4,54,.45); padding: clamp(20px, 4vw, 50px); }
+.board-strike-overlay { position: absolute; z-index: 3; inset: 0; display: grid; place-items: center; pointer-events: none; overflow: hidden; }
+.board-strike-overlay span { color: #f51c2a; font: 900 clamp(190px, 35vw, 460px)/.7 'Barlow Condensed'; text-shadow: 10px 10px 0 rgba(106, 5, 21, .45), 0 0 28px rgba(255, 44, 54, .8); transform: rotate(-12deg); animation: giant-strike .95s cubic-bezier(.2, .8, .3, 1) both; }
 .question-header { text-align: center; border-bottom: 5px dotted #ffe942; padding: 16px 4% 24px; }
 .show-badge { margin: -75px auto 10px; width: 150px; padding: 4px 15px; border: 5px solid #ffca3a; border-radius: 50%; background: #172e6d; color: #ffdb2f; font: 900 42px/1 'Barlow Condensed'; text-shadow: 2px 2px #a43e20; }
 .eyebrow { margin: 0 0 5px; color: #ffda33; font: 800 14px/1 'Barlow Condensed'; letter-spacing: .16em; text-transform: uppercase; }
 h1, h2, p { margin: 0; }
 .question-header h1 { color: #fff; font: 800 clamp(25px, 4vw, 52px)/1.05 'Barlow Condensed'; text-transform: uppercase; }
 .board-scores { display: flex; justify-content: space-between; gap: 18px; margin: 24px 0 18px; }
-.team-score { display: flex; flex-direction: column; align-items: center; min-width: 130px; padding: 8px 28px; border-radius: 5px; background: #18224c; border-top: 6px solid; font: 800 18px/1 'Barlow Condensed'; letter-spacing: .1em; }
+.team-score { display: flex; flex-direction: column; align-items: center; min-width: 130px; max-width: 44%; padding: 8px 28px; border-radius: 5px; background: #18224c; border-top: 6px solid; font: 800 18px/1 'Barlow Condensed'; letter-spacing: .1em; }.team-score > span { max-width: 100%; color: #fff; font: 900 clamp(22px, 3vw, 34px)/.9 'Barlow Condensed'; letter-spacing: .04em; text-align: center; text-transform: uppercase; overflow-wrap: anywhere; }
 .team-score strong { color: #ffdb2f; font: 900 clamp(40px, 7vw, 74px)/.9 'Barlow Condensed'; letter-spacing: 0; }
 .team-score.red { border-color: #fb3d46; }.team-score.white { border-color: #f5f5ed; }
 .answer-board { display: grid; gap: 9px; }
@@ -44,4 +46,5 @@ h1, h2, p { margin: 0; }
 @keyframes pulse { to { transform: rotate(360deg); } }
 @keyframes connection-pulse { 50% { opacity: .62; } }
 @keyframes reveal-pan { from { opacity: 0; transform: translateX(-36px); } to { opacity: 1; transform: translateX(0); } }
-@media (max-width: 800px) { .screen-nav { top: 10px; right: 10px; }.board-page { padding: 58px 12px 12px; }.board-status { align-items: stretch; flex-direction: column; width: 100%; }.board-status .sync-button { align-self: flex-end; }.board-status .connection-banner { width: 100%; }.board-shell { padding: 18px 12px; }.show-badge { margin-top: -48px; width: 112px; font-size: 32px; }.answer-row { grid-template-columns: 38px 1fr 55px; }.answer-text { padding: 8px 10px; }.answer-points { padding-right: 10px; }.team-score { min-width: 110px; padding: 7px 16px; }.control-panel, .current-panel, .answers-panel { grid-column: span 12; }.host-page { padding-top: 78px; }.host-topbar, .host-footer { align-items: flex-start; flex-direction: column; }.host-answer { align-items: flex-start; flex-direction: column; }.host-answer div { width: 100%; }.host-answer button { flex: 1; }.board-footer { padding-top: 17px; } }
+@keyframes giant-strike { 0% { opacity: 0; transform: rotate(-12deg) scale(.35); } 18% { opacity: 1; transform: rotate(-12deg) scale(1.08); } 70% { opacity: 1; transform: rotate(-12deg) scale(1); } 100% { opacity: 0; transform: rotate(-12deg) scale(1.02); } }
+@media (max-width: 800px) { .board-page { padding: 58px 12px 12px; }.board-status { align-items: stretch; flex-direction: column; width: 100%; }.board-status .sync-button { align-self: flex-end; }.board-status .connection-banner { width: 100%; }.board-shell { padding: 18px 12px; }.show-badge { margin-top: -48px; width: 112px; font-size: 32px; }.answer-row { grid-template-columns: 38px 1fr 55px; }.answer-text { padding: 8px 10px; }.answer-points { padding-right: 10px; }.team-score { min-width: 110px; padding: 7px 16px; }.control-panel, .current-panel, .answers-panel { grid-column: span 12; }.host-page { padding-top: 78px; }.host-topbar, .host-footer { align-items: flex-start; flex-direction: column; }.host-answer { align-items: flex-start; flex-direction: column; }.host-answer div { width: 100%; }.host-answer button { flex: 1; }.board-footer { padding-top: 17px; } }
