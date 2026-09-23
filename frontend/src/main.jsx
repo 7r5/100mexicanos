@@ -115,14 +115,26 @@ function ScreenNav({ current }) {
   );
 }
 
+function ConnectionBanner({ connected, error }) {
+  const message = connected ? "Backend conectado · EN VIVO" : "Esperando backend · RECONECTANDO";
+  return (
+    <div className={`connection-banner ${connected ? "online" : "offline"}`} role="status">
+      <span className="connection-dot" />
+      <strong>{message}</strong>
+      {error && <span>{error}</span>}
+    </div>
+  );
+}
+
 function Board() {
-  const { state, connected } = useGameState(false);
+  const { state, connected, error } = useGameState(false);
   const card = state.currentCard;
   return (
     <main className="board-page">
       <div className="sunburst" />
       <ScreenNav current="board" />
       <div className="board-shell">
+        <ConnectionBanner connected={connected} error={error} />
         <QuestionHeader state={state} />
         <div className="board-scores">
           <TeamScore name="ROJO" value={state.scores.red} color="red" />
@@ -188,6 +200,7 @@ function Host() {
           {connected ? "Conectado" : "Sin conexión"}
         </span>
       </div>
+      <ConnectionBanner connected={connected} error={error} />
       {error && (
         <div className="alert">
           {error}. Revisa VITE_HOST_TOKEN y la URL del backend.
