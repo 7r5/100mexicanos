@@ -94,10 +94,12 @@ function TeamScore({ name, value, color, strikes }) {
   return (
     <div className={`team-score-group ${color}`}>
       <div className="team-score">
-        <span>{name}</span>
-        <strong>{value}</strong>
+        <div className="team-score-info">
+          <span>{name}</span>
+          <strong>{value}</strong>
+        </div>
+        <Strikes count={strikes} />
       </div>
-      <Strikes count={strikes} />
     </div>
   );
 }
