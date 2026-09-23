@@ -1,4 +1,4 @@
-import { StrictMode, useEffect, useState } from "react";
+import React, { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { io } from "socket.io-client";
 import "./styles.css";
