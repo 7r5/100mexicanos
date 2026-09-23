@@ -642,33 +642,33 @@ function Host() {
               </div>
             );
           })}
-          {card && !card.awardedTo && (
-            <div className="award-round-actions">
-              <strong>
-                {state.strikes?.red >= 3 || state.strikes?.white >= 3
-                  ? `Robo: ¿quién se lleva los ${card.roundPoints} puntos?`
-                  : `¿A quién van los ${card.roundPoints} puntos?`}
-              </strong>
-              {!card.revealed?.every(Boolean) && (
-                <small className="award-round-hint">
-                  Las respuestas sin revelar se mostrarán al público sin sumar
-                  puntos.
-                </small>
-              )}
-              <button
-                className="red-button"
-                onClick={() => action("game:award-round", { team: "red" })}
-              >
-                {displayTeamNames.red}
-              </button>
-              <button
-                className="light-button"
-                onClick={() => action("game:award-round", { team: "white" })}
-              >
-                {displayTeamNames.white}
-              </button>
-            </div>
+          {card && !card.awardedTo && !card.revealed?.every(Boolean) && (
+            <small className="award-round-hint">
+              Las respuestas sin revelar se mostrarán al público sin sumar
+              puntos.
+            </small>
           )}
+          <div className="award-round-actions">
+            <strong>
+              {state.strikes?.red >= 3 || state.strikes?.white >= 3
+                ? `Robo: ¿quién se lleva los ${card?.roundPoints || 0} puntos?`
+                : `¿A quién van los ${card?.roundPoints || 0} puntos?`}
+            </strong>
+            <button
+              className="red-button"
+              onClick={() => action("game:award-round", { team: "red" })}
+              disabled={!card || Boolean(card.awardedTo)}
+            >
+              {displayTeamNames.red}
+            </button>
+            <button
+              className="light-button"
+              onClick={() => action("game:award-round", { team: "white" })}
+              disabled={!card || Boolean(card.awardedTo)}
+            >
+              {displayTeamNames.white}
+            </button>
+          </div>
         </div>
         <div className="control-panel score-panel">
           <div className="panel-heading">
