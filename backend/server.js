@@ -173,6 +173,11 @@ const httpServer = createServer(app);
 const io = new Server(httpServer, { cors: { origin: allowedOrigin === '*' ? true : allowedOrigin } });
 const hostNamespace = io.of('/host');
 hostNamespace.use(requireHost);
+const broadcastState = () => {
+    const nextState = publicState();
+    io.emit('state:update', nextState);
+    hostNamespace.emit('state:update', nextState);
+};
 
 io.on('connection', (socket) => {
     socket.emit('state:update', publicState());
@@ -187,7 +192,7 @@ hostNamespace.on('connection', (socket) => {
             if (state.currentCard?.id) state.usedCards.push(state.currentCard.id);
             if (!chooseCard()) throw new Error('No quedan tarjetas disponibles');
             await saveState();
-            io.emit('state:update', publicState());
+            broadcastState();
             reply(ack, { ok: true });
         } catch (error) { reply(ack, { ok: false, error: error.message }); }
     });
@@ -199,7 +204,7 @@ hostNamespace.on('connection', (socket) => {
             state.strikes = { red: 0, white: 0 };
             state.status = 'waiting';
             await saveState();
-            io.emit('state:update', publicState());
+            broadcastState();
             reply(ack, { ok: true });
         } catch (error) { reply(ack, { ok: false, error: error.message }); }
     });
@@ -214,7 +219,7 @@ hostNamespace.on('connection', (socket) => {
             state.currentCard.revealed[answerIndex] = { team, points };
             state.scores[team] = currentScore + points;
             await saveState();
-            io.emit('state:update', publicState());
+            broadcastState();
             reply(ack, { ok: true });
         } catch (error) { reply(ack, { ok: false, error: error.message }); }
     });
@@ -224,7 +229,7 @@ hostNamespace.on('connection', (socket) => {
             state.strikes ??= { red: 0, white: 0 };
             state.strikes[team] = Math.min(3, state.strikes[team] + 1);
             await saveState();
-            io.emit('state:update', publicState());
+            broadcastState();
             reply(ack, { ok: true });
         } catch (error) { reply(ack, { ok: false, error: error.message }); }
     });
@@ -239,7 +244,7 @@ hostNamespace.on('connection', (socket) => {
             state.scores[toTeam] = Number(state.scores[toTeam]) + roundPoints;
             state.currentCard.stolenBy = toTeam;
             await saveState();
-            io.emit('state:update', publicState());
+            broadcastState();
             reply(ack, { ok: true, points: roundPoints });
         } catch (error) { reply(ack, { ok: false, error: error.message }); }
     });
@@ -249,7 +254,7 @@ hostNamespace.on('connection', (socket) => {
             if (!Number.isInteger(nextScores.red) || !Number.isInteger(nextScores.white) || nextScores.red < 0 || nextScores.white < 0) throw new Error('Puntuacion invalida');
             state.scores = nextScores;
             await saveState();
-            io.emit('state:update', publicState());
+            broadcastState();
             reply(ack, { ok: true });
         } catch (error) { reply(ack, { ok: false, error: error.message }); }
     });
@@ -262,16 +267,16 @@ hostNamespace.on('connection', (socket) => {
             if (!teamNames.red || !teamNames.white) throw new Error('Los dos equipos necesitan nombre');
             state.teamNames = teamNames;
             await saveState();
-            io.emit('state:update', publicState());
+            broadcastState();
             reply(ack, { ok: true });
         } catch (error) { reply(ack, { ok: false, error: error.message }); }
     });
     socket.on('game:reset-scores', async (_payload, ack) => {
-        try { resetScores(); await saveState(); io.emit('state:update', publicState()); reply(ack, { ok: true }); }
+        try { resetScores(); await saveState(); broadcastState(); reply(ack, { ok: true }); }
         catch (error) { reply(ack, { ok: false, error: error.message }); }
     });
     socket.on('game:hard-reset', async (_payload, ack) => {
-        try { state = initialState(); await saveState(); io.emit('state:update', publicState()); reply(ack, { ok: true }); }
+        try { state = initialState(); await saveState(); broadcastState(); reply(ack, { ok: true }); }
         catch (error) { reply(ack, { ok: false, error: error.message }); }
     });
 });
