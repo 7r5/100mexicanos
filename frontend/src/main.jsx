@@ -166,8 +166,17 @@ function SyncButton({ syncing, onClick }) {
   );
 }
 
-function StrikeOverlay({ team, count, name }) {
+function StrikeOverlay({ team, count, name, stolenBy }) {
   if (!team) return null;
+  if (stolenBy) {
+    return (
+      <div className="board-strike-overlay steal-overlay" aria-live="assertive">
+        <span key={`steal-${stolenBy}`}>
+          <strong>ROBO DE PUNTOS</strong>
+        </span>
+      </div>
+    );
+  }
   return (
     <div className={`board-strike-overlay ${team}`} aria-live="assertive">
       <span key={`${team}-${count}`}>
@@ -218,6 +227,7 @@ function Board() {
           team={state.lastStrikeTeam}
           count={state.strikes?.[state.lastStrikeTeam] || 0}
           name={teamNames[state.lastStrikeTeam]}
+          stolenBy={card?.stolenBy}
         />
         <QuestionHeader state={state} />
         <div className="board-scores">
@@ -243,6 +253,12 @@ function Board() {
                 key={`${answer}-${index}`}
               >
                 <span className="answer-index">{index + 1}</span>
+                {reveal && (
+                  <span
+                    className={`answer-team-dot ${reveal.team}`}
+                    title={`Respondio ${teamNames[reveal.team]}`}
+                  />
+                )}
                 <span className="answer-text">
                   {reveal ? answer : "••••••••••••••••"}
                 </span>
