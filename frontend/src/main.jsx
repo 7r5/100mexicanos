@@ -167,7 +167,7 @@ function StrikeOverlay({ team, count }) {
   if (!team) return null;
   return (
     <div className="board-strike-overlay" aria-live="assertive">
-      <span key={`${team}-${count}`}>X</span>
+      <span key={`${team}-${count}`}>{"X".repeat(count || 1)}</span>
     </div>
   );
 }
