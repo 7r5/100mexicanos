@@ -125,10 +125,27 @@ async function saveState() {
     await fs.rename(temporaryPath, backupPath);
 }
 
-function publicState() {
+function normalizeState() {
     state.teamNames ??= { red: 'ROJO', white: 'BLANCO' };
     state.strikes ??= { red: 0, white: 0 };
     return state;
+}
+
+function publicState() {
+    return normalizeState();
+}
+
+function stateForViewer(isHost) {
+    normalizeState();
+    if (isHost || !state.currentCard || state.currentCard.questionVisible) return state;
+    return {
+        ...state,
+        currentCard: {
+            ...state.currentCard,
+            question: '',
+            answers: []
+        }
+    };
 }
 
 function getCard(cardId) {
@@ -146,6 +163,7 @@ function chooseCard() {
         revealed: Array(6).fill(null),
         roundPoints: 0,
         awardedTo: null,
+        questionVisible: false,
         wrongAnswers: 0,
         stolenBy: null
     };
@@ -170,7 +188,7 @@ const app = express();
 app.use(cors({ origin: allowedOrigin === '*' ? true : allowedOrigin }));
 app.use(express.json());
 app.get('/api/health', (_request, response) => response.json({ ok: true }));
-app.get('/api/state', (_request, response) => response.json(publicState()));
+app.get('/api/state', (_request, response) => response.json(stateForViewer(false)));
 app.get('/api/session', (_request, response) => response.json({ hostToken }));
 
 const httpServer = createServer(app);
@@ -178,13 +196,12 @@ const io = new Server(httpServer, { cors: { origin: allowedOrigin === '*' ? true
 const hostNamespace = io.of('/host');
 hostNamespace.use(requireHost);
 const sendCurrentState = (socket, ack) => {
-    socket.emit('state:update', publicState());
+    socket.emit('state:update', stateForViewer(Boolean(socket.data.isHost)));
     if (typeof ack === 'function') ack({ ok: true });
 };
 const broadcastState = () => {
-    const nextState = publicState();
-    io.emit('state:update', nextState);
-    hostNamespace.emit('state:update', nextState);
+    io.emit('state:update', stateForViewer(false));
+    hostNamespace.emit('state:update', stateForViewer(true));
 };
 
 io.on('connection', (socket) => {
@@ -206,6 +223,15 @@ hostNamespace.on('connection', (socket) => {
             reply(ack, { ok: true });
         } catch (error) { reply(ack, { ok: false, error: error.message }); }
     });
+    socket.on('game:reveal-question', async (_payload, ack) => {
+        try {
+            if (!state.currentCard) throw new Error('No hay tarjeta activa');
+            state.currentCard.questionVisible = true;
+            await saveState();
+            broadcastState();
+            reply(ack, { ok: true });
+        } catch (error) { reply(ack, { ok: false, error: error.message }); }
+    });
     socket.on('game:skip-card', async (_payload, ack) => {
         try {
             if (!state.currentCard) throw new Error('No hay tarjeta activa');
@@ -222,12 +248,21 @@ hostNamespace.on('connection', (socket) => {
     socket.on('game:reveal', async ({ answerIndex }, ack) => {
         try {
             if (!state.currentCard) throw new Error('Accion invalida');
+            if (!state.currentCard.questionVisible) throw new Error('Primero revela la pregunta');
             if (!Number.isInteger(answerIndex) || answerIndex < 0 || answerIndex > 5) throw new Error('Respuesta invalida');
             if (state.currentCard.revealed[answerIndex]) throw new Error('Respuesta ya revelada');
             const points = Number(state.currentCard.points[answerIndex]);
             if (!Number.isFinite(points)) throw new Error('Puntuacion invalida');
             state.currentCard.revealed[answerIndex] = { points };
             state.currentCard.roundPoints = Number(state.currentCard.roundPoints || 0) + points;
+            await saveState();
+            broadcastState();
+            reply(ack, { ok: true });
+        } catch (error) { reply(ack, { ok: false, error: error.message }); }
+    });
+    socket.on('game:end-game', async (_payload, ack) => {
+        try {
+            state.status = 'finished';
             await saveState();
             broadcastState();
             reply(ack, { ok: true });

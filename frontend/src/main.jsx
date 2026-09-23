@@ -2,44 +2,35 @@ import React, { StrictMode, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { io } from "socket.io-client";
 import "./styles.css";
+import startSound from "./sounds/a-jugar.mp3";
+import correctSound from "./sounds/correcto.mp3";
+import incorrectSound from "./sounds/incorrecto.mp3";
+import victorySound from "./sounds/triunfo.mp3";
 
 const apiHost = import.meta.env.VITE_API_HOST || "localhost:10000";
 const apiUrl = apiHost.startsWith("http")
   ? apiHost
   : `${location.protocol === "https:" ? "https" : "http"}://${apiHost}`;
 const hostToken = import.meta.env.VITE_HOST_TOKEN || "dev-host";
-let audioContext;
-
 function playGameSound(type) {
-  if (typeof window === "undefined") return;
-  const AudioContext = window.AudioContext || window.webkitAudioContext;
-  if (!AudioContext) return;
-  audioContext ||= new AudioContext();
-  const now = audioContext.currentTime;
-  const oscillator = audioContext.createOscillator();
-  const gain = audioContext.createGain();
-  oscillator.type = type === "strike" ? "sawtooth" : "triangle";
-  oscillator.frequency.setValueAtTime(type === "strike" ? 150 : 520, now);
-  oscillator.frequency.exponentialRampToValueAtTime(
-    type === "strike" ? 80 : 780,
-    now + 0.16,
-  );
-  gain.gain.setValueAtTime(0.0001, now);
-  gain.gain.exponentialRampToValueAtTime(0.16, now + 0.02);
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.2);
-  oscillator.connect(gain).connect(audioContext.destination);
-  oscillator.start(now);
-  oscillator.stop(now + 0.21);
-  audioContext.resume().catch(() => {});
+  const sounds = {
+    start: startSound,
+    correct: correctSound,
+    incorrect: incorrectSound,
+    victory: victorySound,
+  };
+  const audio = new Audio(sounds[type]);
+  audio.volume = 0.9;
+  audio.play().catch(() => {});
 }
 const blankState = {
   scores: { red: 0, white: 0 },
   teamNames: { red: "ROJO", white: "BLANCO" },
   strikes: { red: 0, white: 0 },
   lastStrikeTeam: null,
+  status: "waiting",
   currentCard: null,
   wrongAnswers: 0,
-  status: "waiting",
   usedCards: [],
   skippedCards: [],
 };
@@ -109,9 +100,7 @@ function QuestionHeader({ state }) {
     <header className="question-header">
       <div className="show-badge">100</div>
       <p className="eyebrow">La encuesta dice</p>
-      <h1>
-        {state.currentCard?.question || "Esperando la siguiente pregunta"}
-      </h1>
+      <h1>{state.currentCard?.question || "Esperando al host"}</h1>
     </header>
   );
 }
@@ -189,6 +178,20 @@ function StrikeOverlay({ team, count, name, stolenBy }) {
   );
 }
 
+function GameFinishedOverlay({ state }) {
+  if (state.status !== "finished") return null;
+  const teamNames = state.teamNames || blankState.teamNames;
+  return (
+    <div className="game-finished-overlay" role="status">
+      <strong>PARTIDA FINALIZADA</strong>
+      <div>
+        {teamNames.red}: {state.scores.red} · {teamNames.white}:{" "}
+        {state.scores.white}
+      </div>
+    </div>
+  );
+}
+
 function RoundPoints({ points }) {
   return <strong className="round-points">Ronda: {points || 0}</strong>;
 }
@@ -200,6 +203,8 @@ function Board() {
   const teamNames = state.teamNames || blankState.teamNames;
   const previousCard = useRef(null);
   const previousStrikes = useRef(state.strikes || blankState.strikes);
+  const previousQuestionVisible = useRef(false);
+  const previousStatus = useRef("waiting");
   async function syncScreen() {
     setSyncing(true);
     await send("state:request");
@@ -211,16 +216,25 @@ function Board() {
     ).length;
     const currentRevealed = (card?.revealed || []).filter(Boolean).length;
     if (previousCard.current && currentRevealed > previousRevealed) {
-      playGameSound("reveal");
+      playGameSound("correct");
     } else if (
       (state.strikes?.red || 0) > previousStrikes.current.red ||
       (state.strikes?.white || 0) > previousStrikes.current.white
     ) {
-      playGameSound("strike");
+      playGameSound("incorrect");
     }
     previousCard.current = card;
     previousStrikes.current = state.strikes || blankState.strikes;
   }, [card, state.strikes?.red, state.strikes?.white]);
+  useEffect(() => {
+    const questionVisible = Boolean(card?.questionVisible);
+    if (questionVisible && !previousQuestionVisible.current)
+      playGameSound("start");
+    if (state.status === "finished" && previousStatus.current !== "finished")
+      playGameSound("victory");
+    previousQuestionVisible.current = questionVisible;
+    previousStatus.current = state.status;
+  }, [card?.questionVisible, state.status]);
   return (
     <main className="board-page">
       <div className="sunburst" />
@@ -229,6 +243,7 @@ function Board() {
         <ConnectionBanner connected={connected} error={error} />
       </div>
       <div className="board-shell">
+        <GameFinishedOverlay state={state} />
         <StrikeOverlay
           team={state.lastStrikeTeam}
           count={state.strikes?.[state.lastStrikeTeam] || 0}
@@ -254,29 +269,31 @@ function Board() {
           <RoundPoints points={card?.roundPoints} />
         </div>
         <section className="answer-board" aria-live="polite">
-          {(card?.answers || Array(6).fill("")).map((answer, index) => {
-            const reveal = card?.revealed?.[index];
-            return (
-              <div
-                className={`answer-row ${reveal ? "revealed" : ""}`}
-                key={`${answer}-${index}`}
-              >
-                <span className="answer-index">{index + 1}</span>
-                {reveal && (
-                  <span
-                    className={`answer-team-dot ${reveal.team}`}
-                    title={`Respondio ${teamNames[reveal.team]}`}
-                  />
-                )}
-                <span className="answer-text">
-                  {reveal ? answer : "••••••••••••••••"}
-                </span>
-                <span className="answer-points">
-                  {reveal ? reveal.points : card ? "—" : ""}
-                </span>
-              </div>
-            );
-          })}
+          {(card?.answers?.length ? card.answers : Array(6).fill("")).map(
+            (answer, index) => {
+              const reveal = card?.revealed?.[index];
+              return (
+                <div
+                  className={`answer-row ${reveal ? "revealed" : ""}`}
+                  key={`${answer}-${index}`}
+                >
+                  <span className="answer-index">{index + 1}</span>
+                  {reveal && (
+                    <span
+                      className={`answer-team-dot ${reveal.team}`}
+                      title={`Respondio ${teamNames[reveal.team]}`}
+                    />
+                  )}
+                  <span className="answer-text">
+                    {reveal ? answer : "••••••••••••••••"}
+                  </span>
+                  <span className="answer-points">
+                    {reveal ? reveal.points : card ? "—" : ""}
+                  </span>
+                </div>
+              );
+            },
+          )}
         </section>
         <div className="board-footer">
           <span className="connection">
@@ -308,8 +325,10 @@ function Host() {
   const card = state.currentCard;
   async function action(event, payload) {
     const result = await send(event, payload);
-    if (result?.ok && event === "game:reveal") playGameSound("reveal");
-    if (result?.ok && event === "game:strike") playGameSound("strike");
+    if (result?.ok && event === "game:reveal-question") playGameSound("start");
+    if (result?.ok && event === "game:reveal") playGameSound("correct");
+    if (result?.ok && event === "game:strike") playGameSound("incorrect");
+    if (result?.ok && event === "game:end-game") playGameSound("victory");
     setMessage(
       result?.ok
         ? "Guardado"
@@ -358,6 +377,14 @@ function Host() {
             <button className="primary" onClick={() => action("game:new-card")}>
               Nueva pregunta
             </button>
+            {card && !card.questionVisible && (
+              <button
+                className="secondary"
+                onClick={() => action("game:reveal-question")}
+              >
+                Revelar pregunta
+              </button>
+            )}
           </div>
         </div>
         <div className="control-panel strikes-panel">
@@ -387,26 +414,32 @@ function Host() {
           >
             X {displayTeamNames.white}
           </button>
-          {card?.revealed?.every(Boolean) && state.strikes?.red >= 3 && !card?.stolenBy && !card?.awardedTo && (
-            <button
-              className="steal-button wide"
-              onClick={() =>
-                action("game:steal", { fromTeam: "red", toTeam: "white" })
-              }
-            >
-              Robo: {displayTeamNames.white}
-            </button>
-          )}
-          {card?.revealed?.every(Boolean) && state.strikes?.white >= 3 && !card?.stolenBy && !card?.awardedTo && (
-            <button
-              className="steal-button wide"
-              onClick={() =>
-                action("game:steal", { fromTeam: "white", toTeam: "red" })
-              }
-            >
-              Robo: {displayTeamNames.red}
-            </button>
-          )}
+          {card?.revealed?.every(Boolean) &&
+            state.strikes?.red >= 3 &&
+            !card?.stolenBy &&
+            !card?.awardedTo && (
+              <button
+                className="steal-button wide"
+                onClick={() =>
+                  action("game:steal", { fromTeam: "red", toTeam: "white" })
+                }
+              >
+                Robo: {displayTeamNames.white}
+              </button>
+            )}
+          {card?.revealed?.every(Boolean) &&
+            state.strikes?.white >= 3 &&
+            !card?.stolenBy &&
+            !card?.awardedTo && (
+              <button
+                className="steal-button wide"
+                onClick={() =>
+                  action("game:steal", { fromTeam: "white", toTeam: "red" })
+                }
+              >
+                Robo: {displayTeamNames.red}
+              </button>
+            )}
         </div>
         <div className="control-panel answers-panel">
           <div className="panel-heading">
@@ -431,7 +464,7 @@ function Host() {
                     onClick={() =>
                       action("game:reveal", { answerIndex: index })
                     }
-                    disabled={Boolean(reveal)}
+                    disabled={Boolean(reveal) || !card.questionVisible}
                   >
                     Revelar
                   </button>
@@ -447,12 +480,18 @@ function Host() {
                   : `¿A quién van los ${card.roundPoints} puntos?`}
               </strong>
               {state.strikes?.red < 3 && (
-                <button className="red-button" onClick={() => action("game:award-round", { team: "red" })}>
+                <button
+                  className="red-button"
+                  onClick={() => action("game:award-round", { team: "red" })}
+                >
                   {displayTeamNames.red}
                 </button>
               )}
               {state.strikes?.white < 3 && (
-                <button className="light-button" onClick={() => action("game:award-round", { team: "white" })}>
+                <button
+                  className="light-button"
+                  onClick={() => action("game:award-round", { team: "white" })}
+                >
                   {displayTeamNames.white}
                 </button>
               )}
@@ -544,6 +583,13 @@ function Host() {
             }}
           >
             Hard reset
+          </button>
+          <button
+            className="victory-button wide"
+            onClick={() => action("game:end-game")}
+            disabled={!card || state.status === "finished"}
+          >
+            Finalizar partida
           </button>
         </div>
       </section>
