@@ -176,6 +176,14 @@ function chooseCard() {
     return state.currentCard;
 }
 
+function revealRemainingForDisplay(card) {
+    card.revealed = card.revealed.map((answer, index) => {
+        if (answer) return answer;
+        const points = Number(card.points[index]);
+        return { points: Number.isFinite(points) ? points : 0, displayOnly: true };
+    });
+}
+
 function requireHost(socket, next) {
     if (socket.handshake.auth?.token !== hostToken) return next(new Error('Host token invalido'));
     socket.data.isHost = true;
@@ -272,14 +280,16 @@ hostNamespace.on('connection', (socket) => {
     socket.on('game:award-round', async ({ team }, ack) => {
         try {
             if (!state.currentCard || !['red', 'white'].includes(team)) throw new Error('Equipo invalido');
-            if (state.currentCard.revealed.some((answer) => !answer)) throw new Error('Primero revela las seis respuestas');
             if (state.currentCard.awardedTo) throw new Error('La ronda ya fue asignada');
             state.strikes ??= { red: 0, white: 0 };
             if (state.strikes[team] >= 3) throw new Error('El equipo con tres equis no puede recibir la ronda');
             const roundPoints = Number(state.currentCard.roundPoints || 0);
             state.scores[team] = Number(state.scores[team]) + roundPoints;
             state.currentCard.awardedTo = team;
-            state.currentCard.revealed = state.currentCard.revealed.map((answer) => ({ ...answer, team }));
+            revealRemainingForDisplay(state.currentCard);
+            state.currentCard.revealed = state.currentCard.revealed.map((answer) =>
+                answer.displayOnly ? answer : { ...answer, team }
+            );
             await saveState();
             broadcastState();
             reply(ack, { ok: true, points: roundPoints });
@@ -302,12 +312,14 @@ hostNamespace.on('connection', (socket) => {
             state.strikes ??= { red: 0, white: 0 };
             if (state.strikes[fromTeam] < 3) throw new Error('El equipo aun no tiene tres equis');
             if (state.currentCard.awardedTo) throw new Error('La ronda ya fue asignada');
-            if (state.currentCard.revealed.some((answer) => !answer)) throw new Error('Primero revela las seis respuestas');
             const roundPoints = Number(state.currentCard.roundPoints || 0);
             state.scores[toTeam] = Number(state.scores[toTeam]) + roundPoints;
             state.currentCard.awardedTo = toTeam;
             state.currentCard.stolenBy = toTeam;
-            state.currentCard.revealed = state.currentCard.revealed.map((answer) => ({ ...answer, team: toTeam }));
+            revealRemainingForDisplay(state.currentCard);
+            state.currentCard.revealed = state.currentCard.revealed.map((answer) =>
+                answer.displayOnly ? answer : { ...answer, team: toTeam }
+            );
             await saveState();
             broadcastState();
             reply(ack, { ok: true, points: roundPoints });

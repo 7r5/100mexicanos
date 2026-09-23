@@ -333,7 +333,7 @@ function Board() {
                   key={`${answer}-${index}`}
                 >
                   <span className="answer-index">{index + 1}</span>
-                  {reveal && (
+                  {reveal?.team && (
                     <span
                       className={`answer-team-dot ${reveal.team}`}
                       title={`Respondio ${teamNames[reveal.team]}`}
@@ -524,7 +524,7 @@ function Host() {
           >
             X {displayTeamNames.white}
           </button>
-          {card?.revealed?.every(Boolean) &&
+          {card &&
             state.strikes?.red >= 3 &&
             !card?.stolenBy &&
             !card?.awardedTo && (
@@ -537,7 +537,7 @@ function Host() {
                 Robo: {displayTeamNames.white}
               </button>
             )}
-          {card?.revealed?.every(Boolean) &&
+          {card &&
             state.strikes?.white >= 3 &&
             !card?.stolenBy &&
             !card?.awardedTo && (
@@ -582,13 +582,19 @@ function Host() {
               </div>
             );
           })}
-          {card?.revealed?.every(Boolean) && !card.awardedTo && (
+          {card && !card.awardedTo && (
             <div className="award-round-actions">
               <strong>
                 {state.strikes?.red >= 3 || state.strikes?.white >= 3
                   ? `Robo: ¿quién se lleva los ${card.roundPoints} puntos?`
                   : `¿A quién van los ${card.roundPoints} puntos?`}
               </strong>
+              {!card.revealed?.every(Boolean) && (
+                <small className="award-round-hint">
+                  Las respuestas sin revelar se mostrarán al público sin sumar
+                  puntos.
+                </small>
+              )}
               {state.strikes?.red < 3 && (
                 <button
                   className="red-button"
