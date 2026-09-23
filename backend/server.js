@@ -144,6 +144,8 @@ function chooseCard() {
         ...card,
         points: createPoints(),
         revealed: Array(6).fill(null),
+        roundPoints: 0,
+        awardedTo: null,
         wrongAnswers: 0,
         stolenBy: null
     };
@@ -217,19 +219,34 @@ hostNamespace.on('connection', (socket) => {
             reply(ack, { ok: true });
         } catch (error) { reply(ack, { ok: false, error: error.message }); }
     });
-    socket.on('game:reveal', async ({ answerIndex, team }, ack) => {
+    socket.on('game:reveal', async ({ answerIndex }, ack) => {
         try {
-            if (!state.currentCard || !['red', 'white'].includes(team)) throw new Error('Accion invalida');
+            if (!state.currentCard) throw new Error('Accion invalida');
             if (!Number.isInteger(answerIndex) || answerIndex < 0 || answerIndex > 5) throw new Error('Respuesta invalida');
             if (state.currentCard.revealed[answerIndex]) throw new Error('Respuesta ya revelada');
             const points = Number(state.currentCard.points[answerIndex]);
-            const currentScore = Number(state.scores[team]);
-            if (!Number.isFinite(points) || !Number.isFinite(currentScore)) throw new Error('Puntuacion invalida');
-            state.currentCard.revealed[answerIndex] = { team, points };
-            state.scores[team] = currentScore + points;
+            if (!Number.isFinite(points)) throw new Error('Puntuacion invalida');
+            state.currentCard.revealed[answerIndex] = { points };
+            state.currentCard.roundPoints = Number(state.currentCard.roundPoints || 0) + points;
             await saveState();
             broadcastState();
             reply(ack, { ok: true });
+        } catch (error) { reply(ack, { ok: false, error: error.message }); }
+    });
+    socket.on('game:award-round', async ({ team }, ack) => {
+        try {
+            if (!state.currentCard || !['red', 'white'].includes(team)) throw new Error('Equipo invalido');
+            if (state.currentCard.revealed.some((answer) => !answer)) throw new Error('Primero revela las seis respuestas');
+            if (state.currentCard.awardedTo) throw new Error('La ronda ya fue asignada');
+            state.strikes ??= { red: 0, white: 0 };
+            if (state.strikes[team] >= 3) throw new Error('El equipo con tres equis no puede recibir la ronda');
+            const roundPoints = Number(state.currentCard.roundPoints || 0);
+            state.scores[team] = Number(state.scores[team]) + roundPoints;
+            state.currentCard.awardedTo = team;
+            state.currentCard.revealed = state.currentCard.revealed.map((answer) => ({ ...answer, team }));
+            await saveState();
+            broadcastState();
+            reply(ack, { ok: true, points: roundPoints });
         } catch (error) { reply(ack, { ok: false, error: error.message }); }
     });
     socket.on('game:strike', async ({ team }, ack) => {
@@ -248,11 +265,13 @@ hostNamespace.on('connection', (socket) => {
             if (!state.currentCard || !['red', 'white'].includes(fromTeam) || !['red', 'white'].includes(toTeam) || fromTeam === toTeam) throw new Error('Robo invalido');
             state.strikes ??= { red: 0, white: 0 };
             if (state.strikes[fromTeam] < 3) throw new Error('El equipo aun no tiene tres equis');
-            if (state.currentCard.stolenBy) throw new Error('El robo ya fue realizado');
-            const roundPoints = state.currentCard.revealed.reduce((total, reveal) => total + (reveal?.team === fromTeam ? Number(reveal.points) : 0), 0);
-            state.scores[fromTeam] = Number(state.scores[fromTeam]) - roundPoints;
+            if (state.currentCard.awardedTo) throw new Error('La ronda ya fue asignada');
+            if (state.currentCard.revealed.some((answer) => !answer)) throw new Error('Primero revela las seis respuestas');
+            const roundPoints = Number(state.currentCard.roundPoints || 0);
             state.scores[toTeam] = Number(state.scores[toTeam]) + roundPoints;
+            state.currentCard.awardedTo = toTeam;
             state.currentCard.stolenBy = toTeam;
+            state.currentCard.revealed = state.currentCard.revealed.map((answer) => ({ ...answer, team: toTeam }));
             await saveState();
             broadcastState();
             reply(ack, { ok: true, points: roundPoints });

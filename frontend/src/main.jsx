@@ -189,6 +189,10 @@ function StrikeOverlay({ team, count, name, stolenBy }) {
   );
 }
 
+function RoundPoints({ points }) {
+  return <strong className="round-points">Ronda: {points || 0}</strong>;
+}
+
 function Board() {
   const { state, connected, error } = useGameState(false);
   const [syncing, setSyncing] = useState(false);
@@ -245,6 +249,9 @@ function Board() {
             color="white"
             strikes={state.strikes?.white || 0}
           />
+        </div>
+        <div className="board-round-points">
+          <RoundPoints points={card?.roundPoints} />
         </div>
         <section className="answer-board" aria-live="polite">
           {(card?.answers || Array(6).fill("")).map((answer, index) => {
@@ -380,7 +387,7 @@ function Host() {
           >
             X {displayTeamNames.white}
           </button>
-          {state.strikes?.red >= 3 && !card?.stolenBy && (
+          {card?.revealed?.every(Boolean) && state.strikes?.red >= 3 && !card?.stolenBy && !card?.awardedTo && (
             <button
               className="steal-button wide"
               onClick={() =>
@@ -390,7 +397,7 @@ function Host() {
               Robo: {displayTeamNames.white}
             </button>
           )}
-          {state.strikes?.white >= 3 && !card?.stolenBy && (
+          {card?.revealed?.every(Boolean) && state.strikes?.white >= 3 && !card?.stolenBy && !card?.awardedTo && (
             <button
               className="steal-button wide"
               onClick={() =>
@@ -404,7 +411,7 @@ function Host() {
         <div className="control-panel answers-panel">
           <div className="panel-heading">
             <span>Revelar respuesta</span>
-            <strong>Elige equipo</strong>
+            <strong>Acumulado: {card?.roundPoints || 0}</strong>
           </div>
           {(card?.answers || []).map((answer, index) => {
             const reveal = card.revealed[index];
@@ -420,30 +427,37 @@ function Host() {
                 </span>
                 <div>
                   <button
-                    className="red-button"
+                    className="secondary"
                     onClick={() =>
-                      action("game:reveal", { answerIndex: index, team: "red" })
+                      action("game:reveal", { answerIndex: index })
                     }
                     disabled={Boolean(reveal)}
                   >
-                    {displayTeamNames.red}
-                  </button>
-                  <button
-                    className="light-button"
-                    onClick={() =>
-                      action("game:reveal", {
-                        answerIndex: index,
-                        team: "white",
-                      })
-                    }
-                    disabled={Boolean(reveal)}
-                  >
-                    {displayTeamNames.white}
+                    Revelar
                   </button>
                 </div>
               </div>
             );
           })}
+          {card?.revealed?.every(Boolean) && !card.awardedTo && (
+            <div className="award-round-actions">
+              <strong>
+                {state.strikes?.red >= 3 || state.strikes?.white >= 3
+                  ? `Robo: ¿quién se lleva los ${card.roundPoints} puntos?`
+                  : `¿A quién van los ${card.roundPoints} puntos?`}
+              </strong>
+              {state.strikes?.red < 3 && (
+                <button className="red-button" onClick={() => action("game:award-round", { team: "red" })}>
+                  {displayTeamNames.red}
+                </button>
+              )}
+              {state.strikes?.white < 3 && (
+                <button className="light-button" onClick={() => action("game:award-round", { team: "white" })}>
+                  {displayTeamNames.white}
+                </button>
+              )}
+            </div>
+          )}
         </div>
         <div className="control-panel score-panel">
           <div className="panel-heading">
