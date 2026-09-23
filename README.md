@@ -1,109 +1,50 @@
 # 100 Mexicanos Dijeron
 
-Juego interactivo inspirado en el popular formato de preguntas y respuestas, desarrollado para ejecutarse en hardware MicroPython con matriz de LEDs, pantalla OLED y buzzer.
+Aplicacion web para jugar en persona con un host y un tablero publico. El firmware de la carpeta `firmware/` es independiente y no participa en la aplicacion web.
 
-## Descripción
+## Arquitectura
 
-Este proyecto simula una versión física del juego "100 Mexicanos Dijeron". El sistema presenta preguntas desde un archivo CSV, muestra un ganador en pantalla, activa luces en una matriz LED y reproduce sonidos con un buzzer. Los jugadores presionan botones para responder y el sistema identifica al ganador de la ronda.
+- `frontend/`: sitio estatico React/Vite con las vistas `/board` y `/host`.
+- `backend/`: API y servidor Socket.IO con Node.js.
+- PostgreSQL: persistencia del estado actual de la partida.
+- `data.csv`: preguntas y seis respuestas ordenadas.
+- `render.yaml`: despliegue de sitio estatico, backend y PostgreSQL en Render.
 
-## Características
+## Ejecutar localmente
 
-- Matriz de LEDs 8x8 para animaciones y estado del juego
-- Pantalla OLED para mostrar mensajes y ganador
-- Buzzer para sonidos de inicio, victoria y reinicio
-- Botones para dos equipos o jugadores: Rojo y Blanco
-- Base de preguntas en formato CSV
-- Lógica de rondas y reinicio automática
+En una terminal:
 
-## Requisitos de hardware
-
-- ESP32 o ESP8266 compatible con MicroPython (yo use ESP32 c3 oled)
-- Matriz de LEDs NeoPixel 8x8
-- Pantalla OLED I2C 128x64
-- Buzzer pasivo o activo
-- 2 botones con pull-up
-- 2 LEDs indicadores
-
-## Estructura del proyecto
-
-```text
-100mexicanos/
-├── README.md
-├── data.csv
-├── scripts/
-│   ├── main.py
-│   ├── matriz.py
-│   ├── pantalla.py
-│   └── sonido.py
-└── .git/
+```sh
+cd backend
+npm install
+npm start
 ```
 
-## Archivos principales
+En otra terminal:
 
-- `data.csv`: contiene las preguntas y respuestas del juego.
-- `scripts/main.py`: lógica principal del juego y flujo del programa.
-- `scripts/matriz.py`: control de la matriz de LEDs.
-- `scripts/pantalla.py`: renderizado de texto y mensajes en la OLED.
-- `scripts/sonido.py`: manejo del buzzer y tonos.
-
-## Cómo ejecutar
-
-1. Instala MicroPython en tu placa.
-2. Copia los archivos de la carpeta `scripts` a la memoria del dispositivo.
-3. Asegúrate de tener las librerías necesarias para:
-   - NeoPixel
-   - OLED SSD1306
-4. Ejecuta `main.py` desde el intérprete de MicroPython.
-
-Ejemplo de arranque:
-
-```python
-from main import *
+```sh
+cd frontend
+npm install
+npm run dev
 ```
 
-> En algunos casos, el archivo principal se ejecuta automáticamente al iniciar la placa si está configurado como boot.py o como script principal.
+Abre la URL de Vite para el tablero. Para el host usa `/host`. En local, el backend usa `backend/data/game-state.json` si no existe `DATABASE_URL`; en Render usa PostgreSQL.
 
-## Configuración del hardware
+Para conectar el host en local, define `VITE_HOST_TOKEN=dev-host` si cambias el valor por defecto. En producción, `VITE_API_HOST` y `VITE_HOST_TOKEN` se configuran en `render.yaml`.
 
-La lógica actual del proyecto asume estos GPIOs:
+## Como se juega
 
-- Matriz LED: GPIO 10
-- Pantalla OLED:
-  - SCL: GPIO 6
-  - SDA: GPIO 5
-- Buzzer: GPIO 2
-- Botón rojo: GPIO 1
-- LED rojo: GPIO 0
-- Botón blanco: GPIO 4
-- LED blanco: GPIO 3
+1. Abre `/host` en el dispositivo del presentador.
+2. Abre `/board` en la pantalla publica.
+3. Pulsa `Nueva pregunta`.
+4. Cuando un equipo adivine, revela la respuesta usando `Rojo` o `Blanco`; sus puntos se suman una sola vez.
+5. Usa `Mandar X` para registrar errores y `Saltar pregunta` para consumir una tarjeta sin mostrarla.
+6. `Reiniciar puntuaciones` conserva el historial de tarjetas. `Hard reset` borra toda la partida, incluido el historial de tarjetas usadas y saltadas.
 
-Si cambias el esquema físico, deberás ajustar los pines en `main.py` y en los módulos correspondientes.
+Los seis puntos se generan por tarjeta con variacion aleatoria, siempre en orden descendente y con valores entre 20 y 50. Se guardan junto con el estado de la tarjeta.
 
-## Flujo del juego
+## Render Blueprint
 
-1. Se inicia el sistema y se muestra el estado `LISTO`.
-2. Se reproduce una melodía de inicio.
-3. El usuario presiona un botón para comenzar la ronda.
-4. Se activa el LED del equipo ganador y la matriz muestra la flecha de color correspondiente.
-5. Se muestra el resultado en la pantalla OLED.
-6. Después de unos segundos, la ronda termina y vuelve al estado listo.
+El Blueprint crea dos servicios web gratuitos y una base PostgreSQL gratuita. El backend recibe `DATABASE_URL` desde la base y guarda el estado antes de emitir cada actualizacion por Socket.IO. Cambia `HOST_TOKEN` y el valor correspondiente de `VITE_HOST_TOKEN` antes de usar el despliegue.
 
-## Datos de preguntas
-
-El archivo `data.csv` sigue este formato:
-
-```csv
-Pregunta,Respuesta_1,Respuesta_2,Respuesta_3,Respuesta_4,Respuesta_5,Respuesta_6
-```
-
-Cada fila representa una pregunta con 6 opciones posibles.
-
-## Notas
-
-- El proyecto está pensado para MicroPython, no para Python estándar de escritorio.
-- El módulo `machine` no existe en un entorno normal de Python, por lo que el código no se ejecutará directamente en una PC sin el firmware apropiado.
-- Si deseas adaptar el proyecto a un entorno de simulación o pruebas en PC, necesitarás stubs o una emulación del hardware.
-
-## Autor
-
-Ricardo A y mi amigo la ia
+La base PostgreSQL es la fuente persistente. El archivo JSON local solo es un respaldo para desarrollo cuando no hay `DATABASE_URL`.
