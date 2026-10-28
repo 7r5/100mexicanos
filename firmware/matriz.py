@@ -76,7 +76,7 @@ class MatrizJuego:
             self.dir_x = 1
 
     def actualizar(self):
-        """Función que se llama en el loop principal para dibujar los cuadros (frames)"""
+        """Función que se llama en el loop principal para dibujar los cuadros (frames) """
         ahora = time.ticks_ms()
         
         # ==========================================
@@ -137,3 +137,4 @@ class MatrizJuego:
                 elif self.estado == "blanco":
                     if self.offset_x > 2: 
                         self.offset_x = -2
+    
