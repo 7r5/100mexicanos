@@ -4,3 +4,4 @@ backend/data/game-state.json
 .env
 .env.*
 !.env.example
+*testdemotest.py
